@@ -10,7 +10,7 @@ import os
 def check_env_file():
     """Check if .env file exists"""
     if not os.path.exists('.env'):
-        print("❌ .env file not found!")
+        print(".env file not found!")
         print("Please create a .env file with your API keys:")
         print("OPENAI_API_KEY=your_openai_api_key_here")
         print("TAVILY_API_KEY=your_tavily_api_key_here")
@@ -22,26 +22,26 @@ def install_dependencies():
     print("📦 Installing dependencies...")
     try:
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
-        print("✅ Dependencies installed successfully!")
+        print("Dependencies installed successfully!")
         return True
     except subprocess.CalledProcessError:
-        print("❌ Failed to install dependencies")
+        print("Failed to install dependencies")
         return False
 
 def start_server():
     """Start the FastAPI server"""
-    print("🚀 Starting Toronto Restaurant Agent API...")
+    print("Starting Toronto Restaurant Agent API...")
     print("=" * 50)
     
     try:
         subprocess.run([sys.executable, "main.py"])
     except KeyboardInterrupt:
-        print("\n👋 Server stopped by user")
+        print("\nServer stopped by user")
     except Exception as e:
-        print(f"❌ Error starting server: {e}")
+        print(f"Error starting server: {e}")
 
 if __name__ == "__main__":
-    print("🍽️  Toronto Restaurant Agent API")
+    print("Toronto Restaurant Agent API")
     print("=" * 40)
     
     # Check if .env file exists

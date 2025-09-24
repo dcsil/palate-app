@@ -1,2 +1,3 @@
 backend/tests/testing_lang/.env
 /backend/tests/testing_lang/__pycache__
+/backend/tests/testing_lang/.vscode

@@ -19,7 +19,7 @@ def test_api():
         return
     
     # Test restaurant recommendation
-    print("\n🍽️  Testing restaurant recommendation...")
+    print("\n Testing restaurant recommendation...")
     test_query = {
         "query": "Find the best Korean restaurant in Toronto for families"
     }
@@ -33,20 +33,20 @@ def test_api():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Success! Status: {response.status_code}")
+            print(f"Success! Status: {response.status_code}")
             print(f"Restaurant: {result.get('restaurant', {}).get('name', 'N/A')}")
             print(f"Address: {result.get('restaurant', {}).get('address', 'N/A')}")
             print(f"Message: {result.get('message', 'N/A')}")
             print(f"Processing time: {result.get('metrics', {}).get('processing_time_seconds', 0):.2f}s")
             print(f"Cost: ${result.get('metrics', {}).get('token_usage', {}).get('estimated_cost_usd', 0):.6f}")
         else:
-            print(f"❌ Error: {response.status_code} - {response.text}")
+            print(f"Error: {response.status_code} - {response.text}")
             
     except Exception as e:
-        print(f"❌ Request failed: {e}")
+        print(f"Request failed: {e}")
 
 if __name__ == "__main__":
-    print("🧪 Testing Toronto Restaurant Agent API")
+    print("Testing Toronto Restaurant Agent API")
     print("=" * 50)
     print("Make sure the server is running: python server.py")
     print()
