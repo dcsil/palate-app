@@ -1,0 +1,3 @@
+/backend/tests/testing_placesapi/.venv
+*.pyc
+backend/tests/testing_placesapi/.env
