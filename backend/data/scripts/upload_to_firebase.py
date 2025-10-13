@@ -35,11 +35,10 @@ def initialize_firebase():
     
     # Look for service account key file
     service_account_paths = [
+        "../config/firebase-service-account.json",
         "firebase-service-account.json",
         "service-account-key.json",
-        "firebase-adminsdk.json",
-        "../firebase-service-account.json",
-        "../../firebase-service-account.json"
+        "firebase-adminsdk.json"
     ]
     
     service_account_file = None
@@ -222,7 +221,7 @@ def main():
     print("=" * 50)
     
     # Configuration
-    csv_file = "restaurant_data_filtered.csv"
+    csv_file = "../data/processed/restaurant_data_filtered.csv"
     collection_name = "restaurants"
     batch_size = 500
     

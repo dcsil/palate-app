@@ -10,7 +10,7 @@ def test_csv_reading():
     """
     Test reading the CSV file and show sample data.
     """
-    csv_file = "restaurant_data_filtered.csv"
+    csv_file = "../data/processed/restaurant_data_filtered.csv"
     
     if not os.path.exists(csv_file):
         print(f"❌ Error: CSV file '{csv_file}' not found!")

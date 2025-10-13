@@ -45,8 +45,8 @@ def extract_restaurant_columns():
     Extract specific columns from the restaurant dataset and save to a new CSV file.
     """
     # Input and output file paths
-    input_file = "tor_res_20251011_enriched_combined.csv"
-    output_file = "restaurant_data_filtered.csv"
+    input_file = "../data/raw/tor_res_20251011_enriched_combined.csv"
+    output_file = "../data/processed/restaurant_data_filtered.csv"
     
     # Check if input file exists
     if not os.path.exists(input_file):
