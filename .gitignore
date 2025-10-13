@@ -3,3 +3,4 @@ backend/tests/testing_lang/.env
 backend/tests/testing_placesapi/.env
 *.pyc
 backend/data/config/firebase-service-account.json
+.dart_tool/
