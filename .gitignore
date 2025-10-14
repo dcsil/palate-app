@@ -4,3 +4,5 @@ backend/tests/testing_placesapi/.env
 *.pyc
 backend/data/config/firebase-service-account.json
 .dart_tool/
+.env
+palate-cve8jj-firebase-adminsdk-fbsvc-a68084b529.json
