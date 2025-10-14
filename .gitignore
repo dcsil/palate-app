@@ -1,3 +1,6 @@
 /backend/tests/testing_placesapi/.venv
 *.pyc
 backend/tests/testing_placesapi/.env
+backend/api/restaurant-search/.env
+/backend/api/restaurant-search/.venvrs
+backend/api/restaurant-search/firebase-key.json
