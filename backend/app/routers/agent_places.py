@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends
-from app.deps import get_places_pruner_agent
 from app.models.requests import PlaceQuery
-from app.models.responses import PrunedPlacesResponse
+from app.models.responses import SearchResponse
+from app.deps import get_single_source_search
 
-router = APIRouter(tags=["Agent Places"])
+router = APIRouter(tags=["search"])
 
-@router.post("/agent/places-prune", response_model=PrunedPlacesResponse)
+@router.post("/agent/search", response_model=SearchResponse)
 
-async def places_prune(query: PlaceQuery, agent=Depends(get_places_pruner_agent)):
-    pruned_places = await agent.run(query)
-    return pruned_places
+async def search(payload: PlaceQuery, svc=Depends(get_single_source_search)):
+    return await svc.search(payload)

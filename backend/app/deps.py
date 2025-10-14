@@ -1,4 +1,4 @@
-from agents.places_pruner import build_places_pruner_agent
+from agents.single_source import SingleSourceSearch
 
-def get_places_pruner_agent():
-    return build_places_pruner_agent()
+def get_single_source_search():
+    return SingleSourceSearch()

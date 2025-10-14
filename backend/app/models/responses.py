@@ -5,9 +5,9 @@ class PlaceItem(BaseModel):
     name: str
     address: str
     google_place_id: Optional[str]
-    in_database: bool
+    score: Optional[float] = None 
 
-class PrunedPlacesResponse(BaseModel):
-    kept: List[PlaceItem]
-    dropped: List[PlaceItem]
-    total_candidates: int
+class SearchResponse(BaseModel):
+    source: str
+    total: int
+    items: List[PlaceItem]
