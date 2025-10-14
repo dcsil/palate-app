@@ -3,7 +3,7 @@ from typing import Dict, Any
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI   # or your preferred LLM
 from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from .tools_google import places_text_search_tool
 from .tools_db import db_filter_known_place_ids
 
@@ -18,7 +18,11 @@ Always return JSON with fields kept, dropped, total_candidates.
 def build_places_pruner_agent(model: str = "gpt-4o-mini") -> "AgentRunner":
     tools = [places_text_search_tool, db_filter_known_place_ids]
     llm = ChatOpenAI(model=model)  # small + cheap works; or any compatible functions model
-    prompt = ChatPromptTemplate.from_messages([("system", SYSTEM), ("human", "{input}")])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", SYSTEM), 
+        ("human", "{input}"),
+        MessagesPlaceholder(variable_name="agent_scratchpad")
+        ])
     agent = create_openai_tools_agent(llm, tools, prompt)
     return AgentRunner(agent)
 

@@ -1,8 +1,10 @@
 # backend/scripts/seed_demo_restaurant.py
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from google.cloud import firestore
 
-project = os.environ["GCP_PROJECT"]
+project = os.getenv("GCP_PROJECT")
 db = firestore.Client(project=project)
 
 doc = {
