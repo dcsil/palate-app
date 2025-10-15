@@ -24,6 +24,6 @@ The **main branch** serves as the stable, production-ready branch.
 
 Clone and switch to the development branch:
 ```bash
-git clone https://github.com/dcsil/vera-app.git
-cd vera-app
+git clone https://github.com/dcsil/palate-app.git
+cd palate-app
 git checkout dev
