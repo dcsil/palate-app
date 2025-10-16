@@ -2,7 +2,7 @@
 Data models and type definitions for the restaurant search API
 """
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LatLng(BaseModel):
@@ -16,6 +16,7 @@ class NearbyRestaurant(BaseModel):
     doc_id: str
     place_id: str
     name: str
+    location: LatLng 
     distance_meters: Optional[float]
     has_search_timestamp: bool
     search_result: Optional['PlaceSearchResult'] = None
@@ -75,3 +76,27 @@ class HealthResponse(BaseModel):
 class RootResponse(BaseModel):
     """Model for root endpoint response"""
     message: str
+
+
+class RestaurantSearchResult(BaseModel):
+    """Model for restaurant search result (basic info)"""
+    place_id: str
+    name: str
+    latitude: float
+    longitude: float
+    distance_meters: float
+    doc_id: str
+    has_search_timestamp: bool
+
+
+class RestaurantSearchResponse(BaseModel):
+    """Model for restaurant search response"""
+    restaurants: List[RestaurantSearchResult]
+    total_found: int
+
+
+class RestaurantDetailsRequest(BaseModel):
+    """Model for restaurant details request"""
+    place_ids: List[str] = Field(..., min_items=1, max_items=10, description="List of place IDs (max 10)")
+    user_lat: float = Field(..., description="User latitude")
+    user_lng: float = Field(..., description="User longitude")

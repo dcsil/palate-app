@@ -76,6 +76,7 @@ class PlacesService:
     
     async def _get_place_details(self, place_id: str) -> Dict[str, Any]:
         """Get place details from Google Places API"""
+        print(f"DEBUG: _get_place_details called for place_id: {place_id}")
         fields = self._get_required_fields()
         headers = {
             "X-Goog-Api-Key": self.api_key,
@@ -83,11 +84,24 @@ class PlacesService:
         }
         
         details_url = f"{self.base_url}/places/{place_id}"
+        print(f"DEBUG: Making API call to: {details_url}")
+        print(f"DEBUG: Headers: {headers}")
+        
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(details_url, headers=headers)
+            print(f"DEBUG: API response status: {response.status_code}")
+            print(f"DEBUG: API response headers: {dict(response.headers)}")
+            
             if response.status_code != 200:
-                raise Exception(f"Places API error: {response.status_code} - {response.text}")
-            return response.json()
+                error_text = response.text
+                print(f"DEBUG: API error response: {error_text}")
+                raise Exception(f"Places API error: {response.status_code} - {error_text}")
+            
+            json_response = response.json()
+            print(f"DEBUG: API response type: {type(json_response)}")
+            print(f"DEBUG: API response keys: {list(json_response.keys()) if isinstance(json_response, dict) else 'Not a dict'}")
+            print(f"DEBUG: API response: {json_response}")
+            return json_response
     
     async def _get_photo_urls(self, place: Dict[str, Any], min_photo_height: int, max_photos: int) -> List[str]:
         """Get photo URLs for a place"""
@@ -152,7 +166,17 @@ class PlacesService:
     
     def _build_search_result(self, place: Dict[str, Any], photo_urls: List[str], distance_m: float) -> Dict[str, Any]:
         """Build the final search result dictionary"""
-        return {
+        print(f"DEBUG: _build_search_result called with place type: {type(place)}")
+        print(f"DEBUG: place is None: {place is None}")
+        if place:
+            print(f"DEBUG: place keys: {list(place.keys())}")
+            print(f"DEBUG: place id: {place.get('id')}")
+            print(f"DEBUG: place displayName: {place.get('displayName')}")
+        
+        print(f"DEBUG: photo_urls type: {type(photo_urls)}, length: {len(photo_urls) if photo_urls else 'None'}")
+        print(f"DEBUG: distance_m: {distance_m}")
+        
+        result = {
             "place_id": place.get("id"),
             "name": (place.get("displayName") or {}).get("text"),
             "photos": photo_urls,
@@ -212,7 +236,140 @@ class PlacesService:
             "types": place.get("types"),
             "maps_links": place.get("googleMapsLinks"),
         }
+        
+        print(f"DEBUG: Built result with place_id: {result.get('place_id')}")
+        print(f"DEBUG: Built result with name: {result.get('name')}")
+        print(f"DEBUG: Result keys: {list(result.keys())}")
+        return result
     
+    async def search_nearby_restaurants(self, user_lat: float, user_lng: float, 
+                                      radius_meters: int = 5000) -> List[Dict[str, Any]]:
+        """
+        Search for nearby restaurants using Google Places API and filter by those in our database.
+        Returns ALL restaurants within the radius, sorted by distance.
+        
+        Args:
+            user_lat: User's latitude
+            user_lng: User's longitude
+            radius_meters: Search radius in meters (max 50000)
+        
+        Returns:
+            List of restaurant place_ids and basic info, sorted by distance
+        """
+        # This function now uses Firebase for comprehensive coverage
+        # Import Firebase service here to avoid circular imports
+        from firebase_service import get_firebase_service
+        
+        firebase_service = get_firebase_service()
+        
+        # Get ALL restaurants from Firebase within the radius
+        all_restaurants = await firebase_service.get_nearby_restaurants(
+            user_lat=user_lat,
+            user_lng=user_lng,
+            limit=10000  # Large limit to get all restaurants
+        )
+        
+        # Filter by radius
+        restaurants_within_radius = [
+            r for r in all_restaurants 
+            if r.get("distance_meters", float('inf')) <= radius_meters
+        ]
+        
+        # Sort by distance
+        restaurants_within_radius.sort(key=lambda x: x.get("distance_meters", float('inf')))
+        
+        # Return simplified data for frontend pagination
+        results = []
+        for restaurant in restaurants_within_radius:
+            results.append({
+                "place_id": restaurant.get("place_id"),
+                "name": restaurant.get("name"),
+                "latitude": restaurant.get("latitude"),
+                "longitude": restaurant.get("longitude"),
+                "distance_meters": restaurant.get("distance_meters"),
+                "doc_id": restaurant.get("doc_id"),
+                "has_search_timestamp": restaurant.get("has_search_timestamp", False)
+            })
+        
+        return results
+
+    async def get_restaurants_details(self, place_ids: List[str], user_lat: float, user_lng: float,
+                                    min_photo_height: int = 400, max_photos: int = 8) -> List[Dict[str, Any]]:
+        """
+        Get detailed restaurant data for multiple place_ids using Google Places API
+        
+        Args:
+            place_ids: List of Google Place IDs (max 10)
+            user_lat: User's latitude
+            user_lng: User's longitude
+            min_photo_height: Minimum photo height in pixels
+            max_photos: Maximum number of photos to return
+        
+        Returns:
+            List of detailed restaurant data
+        """
+        if not self.api_key:
+            raise ValueError("GOOGLE_MAPS_API_KEY environment variable is required")
+        
+        if len(place_ids) > 10:
+            raise ValueError("Maximum 10 place_ids allowed per request")
+        
+        results = []
+        
+        # Process each place_id
+        for place_id in place_ids:
+            print(f"DEBUG: Processing place_id: {place_id}")
+            try:
+                # Get place details from Google Places API
+                print(f"DEBUG: Calling _get_place_details for {place_id}")
+                place = await self._get_place_details(place_id)
+                print(f"DEBUG: _get_place_details returned: {type(place)} - {place is not None}")
+                
+                if place is None:
+                    print(f"DEBUG: place is None for {place_id}, creating error result")
+                    results.append({
+                        "place_id": place_id,
+                        "error": "Google Places API returned None",
+                        "name": None,
+                        "distance_meters": None
+                    })
+                    continue
+                
+                # Get photo URLs
+                print(f"DEBUG: Getting photo URLs for {place_id}")
+                photo_urls = await self._get_photo_urls(place, min_photo_height, max_photos)
+                print(f"DEBUG: photo_urls: {len(photo_urls) if photo_urls else 'None'}")
+                
+                # Calculate distance
+                print(f"DEBUG: Calculating distance for {place_id}")
+                distance_m = self._calculate_distance(place, user_lat, user_lng)
+                print(f"DEBUG: distance_m: {distance_m}")
+                
+                # Build search result
+                print(f"DEBUG: Building search result for {place_id}")
+                search_result = self._build_search_result(place, photo_urls, distance_m)
+                print(f"DEBUG: search_result type: {type(search_result)}, is None: {search_result is None}")
+                print(f"DEBUG: search_result keys: {list(search_result.keys()) if search_result else 'None'}")
+                
+                results.append(search_result)
+                print(f"DEBUG: Successfully processed {place_id}")
+                
+            except Exception as e:
+                print(f"DEBUG: Exception processing place {place_id}: {str(e)}")
+                print(f"DEBUG: Exception type: {type(e)}")
+                import traceback
+                traceback.print_exc()
+                # Add error result
+                results.append({
+                    "place_id": place_id,
+                    "error": str(e),
+                    "name": None,
+                    "distance_meters": None
+                })
+                continue
+        
+        return results
+
     async def get_place_details(self, place_id: str, user_lat: float, user_lng: float, 
                               min_photo_height: int = 400, max_photos: int = 8) -> Dict[str, Any]:
         """
