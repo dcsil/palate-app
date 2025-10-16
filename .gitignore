@@ -8,3 +8,4 @@ backend/data/config/firebase-service-account.json
 palate-cve8jj-firebase-adminsdk-fbsvc-a68084b529.json
 /backend/api_search/.venvas
 backend/api_search/firebase-service.json
+backend/api_search/Dockerfile

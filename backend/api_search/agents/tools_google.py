@@ -1,7 +1,9 @@
 from langchain.tools import tool
-from services.google_places import text_search
 import os
 from dotenv import load_dotenv
+
+from services.google_places import text_search
+
 load_dotenv()  # take environment variables from .env.
 
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
@@ -27,8 +29,8 @@ async def places_text_search_tool(query: str, lat: float|None=None, lng: float|N
     norm = []
     for r in results:
         norm.append({
-            "name": r.get("name"),
-            "address": r.get("formatted_address"),
+            "name": r.get("name") or "Unknown",
+            "address": r.get("formatted_address") or "Address not available",
             "place_id": r.get("place_id"),
         })
     return norm

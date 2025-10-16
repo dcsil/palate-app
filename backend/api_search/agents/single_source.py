@@ -1,9 +1,10 @@
 # agents/single_source.py
 import os
 from typing import Dict, Any, List
+from rapidfuzz import fuzz, process  # pip install rapidfuzz
+
 from services.google_places import text_search
 from services.firestore import db
-from rapidfuzz import fuzz, process  # pip install rapidfuzz
 
 DEMO = os.getenv("DEMO_MODE", "false").lower() == "true"
 
@@ -35,8 +36,8 @@ class SingleSourceSearch:
         items = []
         for r in results:
             items.append({
-                "name": r.get("name"),
-                "address": r.get("formatted_address") or r.get("address"),
+                "name": r.get("name") or "Unknown",
+                "address": r.get("formatted_address") or r.get("address") or "Address not available",
                 "google_place_id": r.get("place_id")
             })
         return items
@@ -69,9 +70,9 @@ class SingleSourceSearch:
                 continue
             d = docs[idx]
             out.append({
-                "name": d.get("name"),
-                "address": d.get("address"),
-                "google_place_id": d.get("place_id"),
+                "name": d.get("name") or "Unknown",
+                "address": d.get("address") or "Address not available",
+                "google_place_id": d.get("google_place_id"),
                 "score": float(score)
             })
         return out
