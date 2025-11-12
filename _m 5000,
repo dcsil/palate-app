@@ -1,0 +1,7 @@
+  dev                     [m 527e789 [[34morigin/dev[m] Update README.md
+  digital-identity-sorting[m 938516c feat: begin digital identity sorting implementation
+  functional-pruning      [m 3492ce1 fix: made pruner llm prompt more specific
+  langchain-agents        [m 3492ce1 [[34morigin/langchain-agents[m] fix: made pruner llm prompt more specific
+* [32mrank-agent              [m 4f09788 [[34morigin/rank-agent[m] update to gitignore
+  search-agent            [m 4f09788 [[34morigin/search-agent[m] update to gitignore
+  testing-placesapi       [m 47e5938 [[34morigin/testing-placesapi[m: behind 8] Update .gitignore

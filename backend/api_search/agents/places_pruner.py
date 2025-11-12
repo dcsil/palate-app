@@ -5,8 +5,8 @@ from langchain_openai import ChatOpenAI   # or your preferred LLM
 # from langchain_community.chat_models import ChatOllama
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from agents.tools_google import places_text_search_tool
-from agents.tools_db import db_filter_known_place_ids
+from .tools_google import places_text_search_tool
+from .tools_db import db_filter_known_place_ids
 
 SYSTEM = """You help find restaurants using Google Places then prune to those present in our database.
 Use the tools exactly as needed:
@@ -18,10 +18,9 @@ Use the tools exactly as needed:
 No commentary, no markdown. Only raw JSON on the final answer.
 """
 
-# def build_places_pruner_agent(model: str = "llama3.1:8b") -> "AgentRunner":
 def build_places_pruner_agent(model: str = "gpt-4o-mini") -> "AgentRunner":
     tools = [places_text_search_tool, db_filter_known_place_ids]
-    # llm = ChatOllama(model=model, temperature=0) # small + cheap works; or any compatible functions model
+
     llm = ChatOpenAI(model="gpt-4o-mini")
     
     prompt = ChatPromptTemplate.from_messages([

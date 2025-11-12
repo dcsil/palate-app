@@ -9,3 +9,4 @@ class PlaceQuery(BaseModel):
     lng: Optional[float] = None
     radius_m: Optional[int] = Field(1000, description="Search radius in meters")
     source: Literal["places", "db"] = "places"
+    debug: Optional[bool] = Field(False, description="Return full raw data structure")

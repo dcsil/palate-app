@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
-from models.requests import PlaceQuery
-from models.responses import SearchResponse
-from deps import get_single_source_search
+from ..models.requests import PlaceQuery
+from ..models.responses import SearchResponse
+from ..deps import get_single_source_search
 
 router = APIRouter(tags=["search"])
 

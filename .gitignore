@@ -5,7 +5,7 @@ backend/tests/testing_placesapi/.env
 backend/data/config/firebase-service-account.json
 .dart_tool/
 .env
-palate-cve8jj-firebase-adminsdk-fbsvc-a68084b529.json
+palate-mvp-c892022b8347.json
 /backend/api_search/.venvas
 backend/api_search/firebase-service.json
 backend/api_search/Dockerfile
