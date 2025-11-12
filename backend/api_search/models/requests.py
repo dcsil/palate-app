@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, List, Any, Dict
 
 class PlaceQuery(BaseModel):
     query: Optional[str] = Field(None, description="Free-text name or query for places")
@@ -10,3 +10,8 @@ class PlaceQuery(BaseModel):
     radius_m: Optional[int] = Field(1000, description="Search radius in meters")
     source: Literal["places", "db"] = "places"
     debug: Optional[bool] = Field(False, description="Return full raw data structure")
+
+
+class RankRequest(BaseModel):
+    restaurants: List[Dict[str, Any]] = Field(..., description="List of restaurant dictionaries from single_source search")
+    taste_vector: List[str] = Field(..., description="List of keywords/attributes user cares about (e.g., ['cozy', 'aesthetic', 'student-friendly'])")

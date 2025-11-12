@@ -153,13 +153,39 @@ class SingleSourceSearch:
             distance = haversine_distance(lat, lng, rest_lat, rest_lng)
 
             if distance <= radius_m:
-                candidates.append({
-                    "name": d.get("name") or "Unknown",
-                    "address": d.get("address") or "Address not available",
-                    "google_place_id": d.get("place_id") or d.get("google_place_id"),
-                    "distance_m": round(distance, 1),
-                    "distance_km": round(distance / 1000, 2)
-                })
+                # Return all document fields plus computed distance metrics
+                item = dict(d)  # Copy all fields from the document
+                
+                # Recursively convert non-serializable types to JSON-safe formats
+                def serialize_value(value):
+                    """Recursively convert Firestore types to JSON-safe equivalents."""
+                    if value is None:
+                        return None
+                    
+                    # GeoPoint -> [lat, lng]
+                    if hasattr(value, "latitude") and hasattr(value, "longitude"):
+                        return [value.latitude, value.longitude]
+                    
+                    # Timestamp/datetime -> ISO string
+                    if hasattr(value, "isoformat"):
+                        return value.isoformat()
+                    
+                    # Recursively handle dicts
+                    if isinstance(value, dict):
+                        return {k: serialize_value(v) for k, v in value.items()}
+                    
+                    # Recursively handle lists and tuples
+                    if isinstance(value, (list, tuple)):
+                        return [serialize_value(v) for v in value]
+                    
+                    # Return as-is for primitives (str, int, float, bool)
+                    return value
+                
+                # Serialize all fields
+                item = serialize_value(item)
+                item["distance_m"] = round(distance, 1)
+                item["distance_km"] = round(distance / 1000, 2)
+                candidates.append(item)
 
         # Sort and return top 10
         candidates.sort(key=lambda x: x["distance_m"])
