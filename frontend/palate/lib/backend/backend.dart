@@ -5,8 +5,9 @@ import '../auth/firebase_auth/auth_util.dart';
 import '../flutter_flow/flutter_flow_util.dart';
 import 'schema/util/firestore_util.dart';
 
-import 'schema/users_record.dart';
 import 'schema/restaurants_record.dart';
+import 'schema/deleting_restaurants_record.dart';
+import 'schema/users_record.dart';
 
 export 'dart:async' show StreamSubscription;
 export 'package:cloud_firestore/cloud_firestore.dart' hide Order;
@@ -15,45 +16,9 @@ export 'schema/index.dart';
 export 'schema/util/firestore_util.dart';
 export 'schema/util/schema_util.dart';
 
-export 'schema/users_record.dart';
 export 'schema/restaurants_record.dart';
-
-/// Functions to query UsersRecords (as a Stream and as a Future).
-Future<int> queryUsersRecordCount({
-  Query Function(Query)? queryBuilder,
-  int limit = -1,
-}) =>
-    queryCollectionCount(
-      UsersRecord.collection,
-      queryBuilder: queryBuilder,
-      limit: limit,
-    );
-
-Stream<List<UsersRecord>> queryUsersRecord({
-  Query Function(Query)? queryBuilder,
-  int limit = -1,
-  bool singleRecord = false,
-}) =>
-    queryCollection(
-      UsersRecord.collection,
-      UsersRecord.fromSnapshot,
-      queryBuilder: queryBuilder,
-      limit: limit,
-      singleRecord: singleRecord,
-    );
-
-Future<List<UsersRecord>> queryUsersRecordOnce({
-  Query Function(Query)? queryBuilder,
-  int limit = -1,
-  bool singleRecord = false,
-}) =>
-    queryCollectionOnce(
-      UsersRecord.collection,
-      UsersRecord.fromSnapshot,
-      queryBuilder: queryBuilder,
-      limit: limit,
-      singleRecord: singleRecord,
-    );
+export 'schema/deleting_restaurants_record.dart';
+export 'schema/users_record.dart';
 
 /// Functions to query RestaurantsRecords (as a Stream and as a Future).
 Future<int> queryRestaurantsRecordCount({
@@ -87,6 +52,80 @@ Future<List<RestaurantsRecord>> queryRestaurantsRecordOnce({
     queryCollectionOnce(
       RestaurantsRecord.collection,
       RestaurantsRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+/// Functions to query DeletingRestaurantsRecords (as a Stream and as a Future).
+Future<int> queryDeletingRestaurantsRecordCount({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+}) =>
+    queryCollectionCount(
+      DeletingRestaurantsRecord.collection,
+      queryBuilder: queryBuilder,
+      limit: limit,
+    );
+
+Stream<List<DeletingRestaurantsRecord>> queryDeletingRestaurantsRecord({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollection(
+      DeletingRestaurantsRecord.collection,
+      DeletingRestaurantsRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+Future<List<DeletingRestaurantsRecord>> queryDeletingRestaurantsRecordOnce({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollectionOnce(
+      DeletingRestaurantsRecord.collection,
+      DeletingRestaurantsRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+/// Functions to query UsersRecords (as a Stream and as a Future).
+Future<int> queryUsersRecordCount({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+}) =>
+    queryCollectionCount(
+      UsersRecord.collection,
+      queryBuilder: queryBuilder,
+      limit: limit,
+    );
+
+Stream<List<UsersRecord>> queryUsersRecord({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollection(
+      UsersRecord.collection,
+      UsersRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+Future<List<UsersRecord>> queryUsersRecordOnce({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollectionOnce(
+      UsersRecord.collection,
+      UsersRecord.fromSnapshot,
       queryBuilder: queryBuilder,
       limit: limit,
       singleRecord: singleRecord,

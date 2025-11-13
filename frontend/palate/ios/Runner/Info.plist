@@ -28,7 +28,7 @@
             <string>Editor</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>com.googleusercontent.apps.322049939075-1fjqlob5hidc3jcrhektaqgh5i3iqdeb</string>
+                <string>com.googleusercontent.apps.371653324669-jlm1n9515esuqm7eijssmmj4gao21ksi</string>
                 
             </array>
         </dict>
@@ -53,11 +53,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
-	<key>NSCameraUsageDescription</key>
-    <string>In order to take a picture or video, this app requires permission to access the camera.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-    <string>In order to upload data, this app requires permission to access the photo library.</string>
 
+	<key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow Palate to access your location to show nearby restaurants and hidden gems around you.</string>
 
 
 

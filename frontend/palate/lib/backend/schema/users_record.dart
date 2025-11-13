@@ -46,25 +46,15 @@ class UsersRecord extends FirestoreRecord {
   String get phoneNumber => _phoneNumber ?? '';
   bool hasPhoneNumber() => _phoneNumber != null;
 
-  // "shortDescription" field.
-  String? _shortDescription;
-  String get shortDescription => _shortDescription ?? '';
-  bool hasShortDescription() => _shortDescription != null;
+  // "completed_onboarding" field.
+  bool? _completedOnboarding;
+  bool get completedOnboarding => _completedOnboarding ?? false;
+  bool hasCompletedOnboarding() => _completedOnboarding != null;
 
-  // "last_active_time" field.
-  DateTime? _lastActiveTime;
-  DateTime? get lastActiveTime => _lastActiveTime;
-  bool hasLastActiveTime() => _lastActiveTime != null;
-
-  // "role" field.
-  String? _role;
-  String get role => _role ?? '';
-  bool hasRole() => _role != null;
-
-  // "title" field.
-  String? _title;
-  String get title => _title ?? '';
-  bool hasTitle() => _title != null;
+  // "archetype" field.
+  String? _archetype;
+  String get archetype => _archetype ?? '';
+  bool hasArchetype() => _archetype != null;
 
   void _initializeFields() {
     _email = snapshotData['email'] as String?;
@@ -73,10 +63,8 @@ class UsersRecord extends FirestoreRecord {
     _uid = snapshotData['uid'] as String?;
     _createdTime = snapshotData['created_time'] as DateTime?;
     _phoneNumber = snapshotData['phone_number'] as String?;
-    _shortDescription = snapshotData['shortDescription'] as String?;
-    _lastActiveTime = snapshotData['last_active_time'] as DateTime?;
-    _role = snapshotData['role'] as String?;
-    _title = snapshotData['title'] as String?;
+    _completedOnboarding = snapshotData['completed_onboarding'] as bool?;
+    _archetype = snapshotData['archetype'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -119,10 +107,8 @@ Map<String, dynamic> createUsersRecordData({
   String? uid,
   DateTime? createdTime,
   String? phoneNumber,
-  String? shortDescription,
-  DateTime? lastActiveTime,
-  String? role,
-  String? title,
+  bool? completedOnboarding,
+  String? archetype,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -132,10 +118,8 @@ Map<String, dynamic> createUsersRecordData({
       'uid': uid,
       'created_time': createdTime,
       'phone_number': phoneNumber,
-      'shortDescription': shortDescription,
-      'last_active_time': lastActiveTime,
-      'role': role,
-      'title': title,
+      'completed_onboarding': completedOnboarding,
+      'archetype': archetype,
     }.withoutNulls,
   );
 
@@ -153,10 +137,8 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e1?.uid == e2?.uid &&
         e1?.createdTime == e2?.createdTime &&
         e1?.phoneNumber == e2?.phoneNumber &&
-        e1?.shortDescription == e2?.shortDescription &&
-        e1?.lastActiveTime == e2?.lastActiveTime &&
-        e1?.role == e2?.role &&
-        e1?.title == e2?.title;
+        e1?.completedOnboarding == e2?.completedOnboarding &&
+        e1?.archetype == e2?.archetype;
   }
 
   @override
@@ -167,10 +149,8 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e?.uid,
         e?.createdTime,
         e?.phoneNumber,
-        e?.shortDescription,
-        e?.lastActiveTime,
-        e?.role,
-        e?.title
+        e?.completedOnboarding,
+        e?.archetype
       ]);
 
   @override
