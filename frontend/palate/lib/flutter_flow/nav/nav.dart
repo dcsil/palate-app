@@ -5,17 +5,19 @@ import 'package:go_router/go_router.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import '/backend/backend.dart';
+import '/backend/schema/structs/index.dart';
 
 import '/auth/base_auth_user_provider.dart';
 
 import '/main.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/lat_lng.dart';
-import '/flutter_flow/place.dart';
+import 'package:ff_theme/flutter_flow/flutter_flow_theme.dart';
+import 'package:ff_commons/flutter_flow/lat_lng.dart';
+import 'package:ff_commons/flutter_flow/place.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'serialization_util.dart';
 
 import '/index.dart';
+import 'package:skeleton_library_2ykezi/index.dart' as $skeleton_library_2ykezi;
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -77,56 +79,91 @@ class AppStateNotifier extends ChangeNotifier {
   }
 }
 
-GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
-      initialLocation: '/',
-      debugLogDiagnostics: true,
-      refreshListenable: appStateNotifier,
-      navigatorKey: appNavigatorKey,
-      errorBuilder: (context, state) =>
-          appStateNotifier.loggedIn ? NavBarPage() : LoginWidget(),
-      routes: [
-        FFRoute(
-          name: '_initialize',
-          path: '/',
-          builder: (context, _) =>
-              appStateNotifier.loggedIn ? NavBarPage() : LoginWidget(),
-        ),
-        FFRoute(
-          name: HomePageWidget.routeName,
-          path: HomePageWidget.routePath,
-          requireAuth: true,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'HomePage')
-              : HomePageWidget(),
-        ),
-        FFRoute(
-          name: LoginWidget.routeName,
-          path: LoginWidget.routePath,
-          builder: (context, params) => LoginWidget(),
-        ),
-        FFRoute(
-          name: SearchWidget.routeName,
-          path: SearchWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'Search')
-              : SearchWidget(),
-        ),
-        FFRoute(
-          name: ProfileWidget.routeName,
-          path: ProfileWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'profile')
-              : ProfileWidget(),
-        ),
-        FFRoute(
-          name: SocialWidget.routeName,
-          path: SocialWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'social')
-              : SocialWidget(),
-        )
-      ].map((r) => r.toRoute(appStateNotifier)).toList(),
-    );
+GoRouter createRouter(AppStateNotifier appStateNotifier) {
+  $skeleton_library_2ykezi.initializeRoutes(
+    homePageWidgetName: 'skeleton_library_2ykezi.HomePage',
+    homePageWidgetPath: '/shimmer',
+  );
+
+  return GoRouter(
+    initialLocation: '/',
+    debugLogDiagnostics: true,
+    refreshListenable: appStateNotifier,
+    navigatorKey: appNavigatorKey,
+    errorBuilder: (context, state) =>
+        appStateNotifier.loggedIn ? NavBarPage() : LoginWidget(),
+    routes: [
+      FFRoute(
+        name: '_initialize',
+        path: '/',
+        builder: (context, _) =>
+            appStateNotifier.loggedIn ? NavBarPage() : LoginWidget(),
+      ),
+      FFRoute(
+        name: ProfileWidget.routeName,
+        path: ProfileWidget.routePath,
+        builder: (context, params) => params.isEmpty
+            ? NavBarPage(initialPage: 'profile')
+            : ProfileWidget(),
+      ),
+      FFRoute(
+        name: SocialWidget.routeName,
+        path: SocialWidget.routePath,
+        builder: (context, params) =>
+            params.isEmpty ? NavBarPage(initialPage: 'social') : SocialWidget(),
+      ),
+      FFRoute(
+        name: Onboard1Widget.routeName,
+        path: Onboard1Widget.routePath,
+        builder: (context, params) => Onboard1Widget(),
+      ),
+      FFRoute(
+        name: Onboarding3Widget.routeName,
+        path: Onboarding3Widget.routePath,
+        builder: (context, params) => Onboarding3Widget(),
+      ),
+      FFRoute(
+        name: HomePageWidget.routeName,
+        path: HomePageWidget.routePath,
+        requireAuth: true,
+        builder: (context, params) => params.isEmpty
+            ? NavBarPage(initialPage: 'HomePage')
+            : HomePageWidget(),
+      ),
+      FFRoute(
+        name: LoginWidget.routeName,
+        path: LoginWidget.routePath,
+        builder: (context, params) => LoginWidget(),
+      ),
+      FFRoute(
+        name: SearchWidget.routeName,
+        path: SearchWidget.routePath,
+        builder: (context, params) =>
+            params.isEmpty ? NavBarPage(initialPage: 'Search') : SearchWidget(),
+      ),
+      FFRoute(
+        name: Onboarding3CopyWidget.routeName,
+        path: Onboarding3CopyWidget.routePath,
+        builder: (context, params) => Onboarding3CopyWidget(),
+      ),
+      FFRoute(
+        name: OnboardWidget.routeName,
+        path: OnboardWidget.routePath,
+        builder: (context, params) => OnboardWidget(),
+      ),
+      FFRoute(
+        name: QuestionsWidget.routeName,
+        path: QuestionsWidget.routePath,
+        builder: (context, params) => QuestionsWidget(),
+      ),
+      FFRoute(
+        name: $skeleton_library_2ykezi.HomePageWidget.routeName,
+        path: $skeleton_library_2ykezi.HomePageWidget.routePath,
+        builder: (context, params) => $skeleton_library_2ykezi.HomePageWidget(),
+      )
+    ].map((r) => r.toRoute(appStateNotifier)).toList(),
+  );
+}
 
 extension NavParamExtensions on Map<String, String?> {
   Map<String, String> get withoutNulls => Map.fromEntries(
@@ -243,6 +280,7 @@ class FFParameters {
     ParamType type, {
     bool isList = false,
     List<String>? collectionNamePath,
+    StructBuilder<T>? structBuilder,
   }) {
     if (futureParamValues.containsKey(paramName)) {
       return futureParamValues[paramName];
@@ -261,6 +299,7 @@ class FFParameters {
       type,
       isList,
       collectionNamePath: collectionNamePath,
+      structBuilder: structBuilder,
     );
   }
 }
@@ -308,15 +347,11 @@ class FFRoute {
                 )
               : builder(context, ffParams);
           final child = appStateNotifier.loading
-              ? Center(
-                  child: SizedBox(
-                    width: 50.0,
-                    height: 50.0,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        FlutterFlowTheme.of(context).primary,
-                      ),
-                    ),
+              ? Container(
+                  color: Colors.transparent,
+                  child: Image.asset(
+                    'assets/images/pc-splash.png',
+                    fit: BoxFit.cover,
                   ),
                 )
               : page;
