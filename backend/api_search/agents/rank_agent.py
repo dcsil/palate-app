@@ -35,7 +35,7 @@ def build_rank_agent() -> "RankAgentRunner":
 
     3. Return ONLY a JSON array of the top 5 restaurants. Each item must have:
     - "restaurant": the original restaurant dictionary (unchanged)
-    - "justification": a short 2-3 sentence explanation combining why this restaurant matches the taste vector AND implicit user preferences
+    - "justification": a short 2-3 sentence explanation combining why this restaurant matches the user's taste vector AND implicit user preferences. Respond as if you are communicating directly to the user, highlighting key reasons this restaurant is a great fit for them.
 
     4. Ensure the JSON is valid and contains exactly the structure above.
 
@@ -120,9 +120,7 @@ class RankAgentRunner:
                 lambda: self.exec.invoke({"input": input_txt})
             )
             
-            output = result.get("output", "")
-            print(f"[DEBUG] Agent output type: {type(output)}")
-            print(f"[DEBUG] Agent output preview: {str(output)[:500]}")
+            output = result["output"]
             
             # Parse JSON from output
             if isinstance(output, str):
@@ -130,16 +128,12 @@ class RankAgentRunner:
                 try:
                     # Look for JSON array pattern
                     import re
-                    json_match = re.search(r'\[\s*\{.*\}\s*\]', output, re.DOTALL)
+                    json_match = re.search(r'\[.*\]', output, re.DOTALL)
                     if json_match:
-                        print(f"[DEBUG] Found JSON match, parsing...")
                         ranked = json.loads(json_match.group())
                     else:
-                        print(f"[DEBUG] No JSON match found, trying direct parse...")
                         ranked = json.loads(output)
-                    print(f"[DEBUG] Successfully parsed JSON with {len(ranked)} items")
-                except (json.JSONDecodeError, ValueError) as e:
-                    print(f"[DEBUG] JSON parse failed: {e}")
+                except (json.JSONDecodeError, ValueError):
                     # Fallback: return top 5 restaurants as-is
                     ranked = [
                         {"restaurant": r, "justification": "Could not rank; returning by proximity"}
@@ -164,9 +158,6 @@ class RankAgentRunner:
             }
             
         except Exception as e:
-            import traceback
-            print(f"[ERROR] Exception in rank agent: {e}")
-            print(traceback.format_exc())
             # Fallback on any error: return top 5 by distance
             return {
                 "ranked_restaurants": [
