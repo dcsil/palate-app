@@ -1,0 +1,16 @@
+
+conda activate vera-app
+uvicorn backend.api_search.main:app --reload --port 8000
+http://localhost:8000/docs
+
+
+{
+  "query": "sushi near me",
+  "address": "null",
+  "google_place_id": "null",
+  "lat": 43.651,
+  "lng": -79.383,
+  "radius_m": 1000,
+  "source": "places",
+  "debug": false
+}

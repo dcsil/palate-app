@@ -7,8 +7,10 @@ from .routers import health, agent_places
 app = FastAPI(title="Vera Backend API", version="1.0.0")
 
 origins = [
+    "http://localhost",
     "http://localhost:*",
     "http://localhost:8000",
+    "http://127.0.0.1:8000",
     "https://preview.flutterflow.app",  # FF web preview host
     "https://palate-cve8jj.flutterflow.app",  # add prod domains when ready
     # "https://your-custom-domain.com",

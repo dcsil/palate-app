@@ -12,4 +12,5 @@ async def search(payload: PlaceQuery, svc=Depends(get_single_source_search)):
 
 @router.post("/agent/rank", response_model=RankResponse)
 async def rank(payload: RankRequest, rank_agent=Depends(get_rank_agent)):
-    return await rank_agent.run(payload.restaurants, payload.taste_vector)
+    user_data = payload.user_data.model_dump() if payload.user_data else None
+    return await rank_agent.run(payload.restaurants, payload.taste_vector, user_data)

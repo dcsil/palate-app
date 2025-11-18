@@ -16,25 +16,32 @@ def build_rank_agent() -> "RankAgentRunner":
     
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     
-    system_prompt = """You are a restaurant ranking agent. Your job is to rank restaurants based on a user's taste vector (keywords/attributes they care about).
+    system_prompt = """You are a restaurant ranking agent. Your job is to rank restaurants based on a user's taste vector, explicit preferences, and implicit user data.
 
-Instructions:
-1. You will receive:
-   - A list of restaurant dictionaries (each with metadata like name, rating, images, amenities, etc.)
-   - A taste vector: a list of keywords/attributes the user cares about (e.g., ["cozy", "aesthetic", "student-friendly"])
+    Instructions:
+    1. You will receive:
+    - A list of restaurant dictionaries (each with metadata like name, rating, images, amenities, etc.)
+    - A taste vector: keywords/attributes the user explicitly cares about (e.g., ["cozy", "aesthetic", "student-friendly"])
+    - Implicit user data: restaurants they have liked, saved, visited, and disliked
 
-2. Evaluate each restaurant by considering:
-   - How well the restaurant matches the taste vector keywords
-   - The metadata provided (images, amenities, ratings, services, etc.)
-   - The restaurant's overall fit for the user's preferences
+    2. Evaluate each restaurant by considering:
+    - How well the restaurant matches the taste vector keywords
+    - Patterns in the user's implicit data:
+        * Similarities to restaurants they liked or saved
+        * Contrast with restaurants they disliked
+        * Restaurant types/attributes they have visited before
+    - The metadata provided (images, amenities, ratings, services, etc.)
+    - Overall fit for the user's preferences based on their complete history
 
-3. Return ONLY a JSON array of the top 5 restaurants. Each item must have:
-   - "restaurant": the original restaurant dictionary (unchanged)
-   - "justification": a short 1-2 sentence explanation of why this restaurant matches the taste vector
+    3. Return ONLY a JSON array of the top 5 restaurants. Each item must have:
+    - "restaurant": the original restaurant dictionary (unchanged)
+    - "justification": a short 2-3 sentence explanation combining why this restaurant matches the taste vector AND implicit user preferences
 
-4. Ensure the JSON is valid and contains exactly the structure above.
+    4. Ensure the JSON is valid and contains exactly the structure above.
 
-Do not include any markdown, commentary, or explanation outside the JSON. Return only the JSON array."""
+    Do not include any markdown, commentary, or explanation outside the JSON. Return only the JSON array.
+    
+    """
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
@@ -50,13 +57,14 @@ class RankAgentRunner:
     def __init__(self, agent):
         self.exec = AgentExecutor(agent=agent, tools=[], verbose=False)
     
-    async def run(self, restaurants: List[Dict[str, Any]], taste_vector: List[str]) -> Dict[str, Any]:
+    async def run(self, restaurants: List[Dict[str, Any]], taste_vector: List[str], user_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Rank restaurants based on taste vector.
+        Rank restaurants based on taste vector and implicit user data.
         
         Args:
             restaurants: List of restaurant dictionaries (output from single_source.py)
             taste_vector: List of keywords/attributes (e.g., ["cozy", "aesthetic", "student-friendly"])
+            user_data: Dict with keys "likes", "saved", "visited", "disliked" (each containing list of restaurant dicts)
         
         Returns:
             {
@@ -73,8 +81,8 @@ class RankAgentRunner:
         if not restaurants:
             return {"ranked_restaurants": [], "total_restaurants": 0}
         
-        if not taste_vector:
-            # If no taste vector, just return top 5 by distance/rating as fallback
+        if not taste_vector and not user_data:
+            # If no taste vector and no user data, just return top 5 by distance/rating as fallback
             fallback = restaurants[:5]
             return {
                 "ranked_restaurants": [
@@ -84,16 +92,27 @@ class RankAgentRunner:
                 "total_restaurants": len(restaurants)
             }
         
+        # Prepare user data context
+        user_data_context = ""
+        if user_data:
+            user_data_context = f"""
+                User's implicit restaurant data:
+                - Liked restaurants: {json.dumps([{"name": r.get("name"), "category": r.get("category")} for r in user_data.get("likes", [])], default=str)}
+                - Saved restaurants: {json.dumps([{"name": r.get("name"), "category": r.get("category")} for r in user_data.get("saved", [])], default=str)}
+                - Visited restaurants: {json.dumps([{"name": r.get("name"), "category": r.get("category")} for r in user_data.get("visited", [])], default=str)}
+                - Disliked restaurants: {json.dumps([{"name": r.get("name"), "category": r.get("category")} for r in user_data.get("disliked", [])], default=str)}
+            """
+        
         # Build input text for the agent
         input_txt = f"""
-User's taste vector: {json.dumps(taste_vector)}
+            User's taste vector: {json.dumps(taste_vector)}
+            {user_data_context}
+            Restaurants to rank:
+            {json.dumps(restaurants, indent=2, default=str)}
 
-Restaurants to rank:
-{json.dumps(restaurants, indent=2, default=str)}
-
-Rank the top 5 restaurants that best match the user's taste vector. Consider all metadata provided.
-Return ONLY a JSON array with "restaurant" and "justification" keys for each item.
-"""
+            Rank the top 5 restaurants that best match the user's taste vector and implicit preferences. Consider all metadata provided and the user's history.
+            Return ONLY a JSON array with "restaurant" and "justification" keys for each item.
+        """
         
         try:
             # Run agent in a thread to avoid blocking
@@ -101,7 +120,9 @@ Return ONLY a JSON array with "restaurant" and "justification" keys for each ite
                 lambda: self.exec.invoke({"input": input_txt})
             )
             
-            output = result["output"]
+            output = result.get("output", "")
+            print(f"[DEBUG] Agent output type: {type(output)}")
+            print(f"[DEBUG] Agent output preview: {str(output)[:500]}")
             
             # Parse JSON from output
             if isinstance(output, str):
@@ -109,12 +130,16 @@ Return ONLY a JSON array with "restaurant" and "justification" keys for each ite
                 try:
                     # Look for JSON array pattern
                     import re
-                    json_match = re.search(r'\[.*\]', output, re.DOTALL)
+                    json_match = re.search(r'\[\s*\{.*\}\s*\]', output, re.DOTALL)
                     if json_match:
+                        print(f"[DEBUG] Found JSON match, parsing...")
                         ranked = json.loads(json_match.group())
                     else:
+                        print(f"[DEBUG] No JSON match found, trying direct parse...")
                         ranked = json.loads(output)
-                except (json.JSONDecodeError, ValueError):
+                    print(f"[DEBUG] Successfully parsed JSON with {len(ranked)} items")
+                except (json.JSONDecodeError, ValueError) as e:
+                    print(f"[DEBUG] JSON parse failed: {e}")
                     # Fallback: return top 5 restaurants as-is
                     ranked = [
                         {"restaurant": r, "justification": "Could not rank; returning by proximity"}
@@ -139,6 +164,9 @@ Return ONLY a JSON array with "restaurant" and "justification" keys for each ite
             }
             
         except Exception as e:
+            import traceback
+            print(f"[ERROR] Exception in rank agent: {e}")
+            print(traceback.format_exc())
             # Fallback on any error: return top 5 by distance
             return {
                 "ranked_restaurants": [
@@ -147,4 +175,3 @@ Return ONLY a JSON array with "restaurant" and "justification" keys for each ite
                 ],
                 "total_restaurants": len(restaurants)
             }
-

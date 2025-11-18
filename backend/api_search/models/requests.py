@@ -12,6 +12,14 @@ class PlaceQuery(BaseModel):
     debug: Optional[bool] = Field(False, description="Return full raw data structure")
 
 
+class UserImplicitData(BaseModel):
+    likes: List[Dict[str, Any]] = Field(default_factory=list, description="List of restaurant data for restaurants user liked")
+    saved: List[Dict[str, Any]] = Field(default_factory=list, description="List of saved restaurant data")
+    visited: List[Dict[str, Any]] = Field(default_factory=list, description="List of visited restaurant data")
+    disliked: List[Dict[str, Any]] = Field(default_factory=list, description="List of disliked restaurant data")
+
+
 class RankRequest(BaseModel):
     restaurants: List[Dict[str, Any]] = Field(..., description="List of restaurant dictionaries from single_source search")
     taste_vector: List[str] = Field(..., description="List of keywords/attributes user cares about (e.g., ['cozy', 'aesthetic', 'student-friendly'])")
+    user_data: Optional[UserImplicitData] = Field(None, description="User's implicit restaurant data (likes, saved, visited, disliked)")

@@ -599,7 +599,115 @@
       "place_id": "ChIJSwvK0WTM1IkRX4X5hDCH0XQ",
       "_id": "104YVKQG2vQfxS1Gskvi"
     }
-  ]
-,
-  "taste_vector": ["cozy", "aesthetic", "good for groups"]
+  ],
+
+  "taste_vector": ["cozy", "aesthetic", "good for groups"],
+
+  "user_data": {
+    "likes":[
+      {
+        "created_at": "2025-10-13T00:53:13.182000+00:00",
+        "location": [
+          43.6511644,
+          -79.3841716
+        ],
+        "formatted_address": "123 Queen St W c52, Toronto, ON M5H 3M9",
+        "types": [
+          "chinese_restaurant",
+          "restaurant",
+          "food",
+          "point_of_interest",
+          "establishment"
+        ],
+        "category": "Chinese",
+        "google_place_id": null,
+        "name": "Noodle King",
+        "google_types": null,
+        "price_range": 1,
+        "place_id": "ChIJPSPE3izL1IkRj_ZZD2bdE7Q",
+        "_id": "3tRCbsSZoZKbQT9aJcsb",
+        "distance_m": 96,
+        "distance_km": 0.1
+      }
+    ],
+    "saved":[
+      {
+        "created_at": "2025-10-13T00:53:17.600000+00:00",
+        "location": [
+          43.6499932,
+          -79.3811834
+        ],
+        "formatted_address": "330 Bay St., Toronto, ON M5H 2S8",
+        "types": [
+          "fine_dining_restaurant",
+          "greek_restaurant",
+          "mediterranean_restaurant",
+          "seafood_restaurant",
+          "restaurant",
+          "point_of_interest",
+          "food",
+          "establishment"
+        ],
+        "category": "Greek",
+        "google_place_id": null,
+        "name": "Knossos Restaurant",
+        "google_types": null,
+        "price_range": null,
+        "place_id": "ChIJwfomv6I1K4gRAYZ6yclVtAs",
+        "_id": "5DiTs6FQ4gy2Ao9UvtHu",
+        "distance_m": 184.1,
+        "distance_km": 0.18
+      }
+    ],
+    "visited": [
+      {
+        "created_at": "2025-10-13T00:53:13.182000+00:00",
+        "location": [
+          43.6511644,
+          -79.3841716
+        ],
+        "formatted_address": "123 Queen St W c52, Toronto, ON M5H 3M9",
+        "types": [
+          "chinese_restaurant",
+          "restaurant",
+          "food",
+          "point_of_interest",
+          "establishment"
+        ],
+        "category": "Chinese",
+        "google_place_id": null,
+        "name": "Noodle King",
+        "google_types": null,
+        "price_range": 1,
+        "place_id": "ChIJPSPE3izL1IkRj_ZZD2bdE7Q",
+        "_id": "3tRCbsSZoZKbQT9aJcsb",
+        "distance_m": 96,
+        "distance_km": 0.1
+      }
+    ],
+    "disliked": [
+      {
+        "created_at": "2025-10-19T10:58:56.923192+00:00",
+        "types": [
+          "italian_restaurant",
+          "restaurant",
+          "food",
+          "point_of_interest",
+          "establishment"
+        ],
+        "formatted_address": "80 Richmond St W, Toronto, ON M5H 2A3, Canada",
+        "location": [
+          43.6511369,
+          -79.38207659999999
+        ],
+        "category": "restaurant",
+        "name": "Florin Trattoria",
+        "price_range": 0,
+        "place_id": "ChIJC0MzCgA1K4gRG-AT_E1f3cM",
+        "_id": "3tBiGFlq7On0quJpbb13",
+        "distance_m": 75.8,
+        "distance_km": 0.08
+      }
+    ]
+  }
 }
