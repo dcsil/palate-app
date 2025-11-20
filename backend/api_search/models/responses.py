@@ -19,7 +19,7 @@ class SearchResponse(BaseModel):
 
 class RankedRestaurantItem(BaseModel):
     restaurant: Dict[str, Any] = {}
-    justification: str
+    justification: List[str]  # List of bullet points
 
 
 class RankResponse(BaseModel):

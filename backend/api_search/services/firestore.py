@@ -25,3 +25,17 @@ def restaurant_by_place_ids(place_ids: list[str]) -> set[str]:
         for doc in q:
             found.add(doc.to_dict()["place_id"])
     return found
+
+
+def get_restaurants_by_place_ids(place_ids: list[str]) -> list[dict]:
+    """
+    Get full restaurant documents by place_ids.
+    Returns a list of restaurant dictionaries.
+    Query by place_id in chunks of 10 (Firestore 'in' clause limit).
+    """
+    restaurants = []
+    for chunk in [place_ids[i:i + 10] for i in range(0, len(place_ids), 10)]:
+        q = db().collection("restaurants").where("place_id", "in", chunk).stream()
+        for doc in q:
+            restaurants.append(doc.to_dict())
+    return restaurants

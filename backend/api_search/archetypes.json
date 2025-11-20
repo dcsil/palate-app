@@ -1,0 +1,89 @@
+{
+    "archetypes": [
+      {
+        "name": "Explorer",
+        "definition": "A diner who actively seeks novelty and experimentation, preferring new cuisines, unfamiliar dishes, and unique food experiences.",
+        "core_motivations": [
+          "Trying new cuisines",
+          "Seeking novelty",
+          "Experiencing cultural diversity"
+        ],
+        "signals": [
+          "Frequently chooses new restaurants",
+          "Orders unique or experimental dishes",
+          "Looks for hidden gems"
+        ]
+      },
+      {
+        "name": "Purist",
+        "definition": "A diner who prioritizes food quality, craftsmanship, and authenticity above all else.",
+        "core_motivations": [
+          "Exceptional flavor",
+          "Culinary mastery",
+          "Ingredient quality"
+        ],
+        "signals": [
+          "Chooses restaurants based on taste rather than hype",
+          "Evaluates dishes by technique and authenticity",
+          "Less influenced by trends"
+        ]
+      },
+      {
+        "name": "Social Curator",
+        "definition": "A diner who values the social experience of dining, choosing restaurants that enhance group interactions and shared memories.",
+        "core_motivations": [
+          "Connecting with friends and partners",
+          "Creating shared experiences",
+          "Choosing places suited for gatherings"
+        ],
+        "signals": [
+          "Selects restaurants ideal for groups",
+          "Values conversational atmospheres",
+          "Often uses friend recommendations"
+        ]
+      },
+      {
+        "name": "Trend Seeker",
+        "definition": "A diner driven by popularity, hype, and what is currently trending on social platforms.",
+        "core_motivations": [
+          "Visiting hyped or viral spots",
+          "Following cultural food trends",
+          "Being early to try popular restaurants"
+        ],
+        "signals": [
+          "Checks reviews and social platforms before deciding",
+          "Visits restaurants with strong online presence",
+          "Values brand recognition and social proof"
+        ]
+      },
+      {
+        "name": "Conformist",
+        "definition": "A diner who prefers familiarity, comfort, and predictable food experiences, avoiding unnecessary risk.",
+        "core_motivations": [
+          "Choosing familiar cuisines",
+          "Consistency and reliability",
+          "Comfort and predictability"
+        ],
+        "signals": [
+          "Frequently returns to regular spots",
+          "Avoids overly experimental dishes",
+          "Prefers menus with recognizable options"
+        ]
+      },
+      {
+        "name": "Aestheticist",
+        "definition": "A diner who values the visual experience—ambience, décor, interior design, and photogenic food presentation.",
+        "core_motivations": [
+          "Beautiful spaces",
+          "Photogenic dishes",
+          "Curated visual identity"
+        ],
+        "signals": [
+          "Chooses visually appealing restaurants",
+          "Enjoys beautifully plated dishes",
+          "Often takes photos of food and surroundings"
+        ]
+      }
+    ]
+  }
+  

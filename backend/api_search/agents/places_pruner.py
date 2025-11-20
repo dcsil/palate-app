@@ -5,8 +5,8 @@ from langchain_openai import ChatOpenAI   # or your preferred LLM
 # from langchain_community.chat_models import ChatOllama
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from .tools_google import places_text_search_tool
-from .tools_db import db_filter_known_place_ids
+from agents.tools_google import places_text_search_tool
+from agents.tools_db import db_filter_known_place_ids
 
 SYSTEM = """You help find restaurants using Google Places then prune to those present in our database.
 Use the tools exactly as needed:
