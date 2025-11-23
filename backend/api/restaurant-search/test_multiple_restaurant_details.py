@@ -2,10 +2,14 @@
 """
 Test script for the new multiple_restaurant_details endpoint
 """
+import pytest
+pytest.importorskip("fastapi")
+pytest.importorskip("firebase_admin")
 import asyncio
 import json
 from main import app
 from fastapi.testclient import TestClient
+
 
 def test_multiple_restaurant_details():
     """Test the multiple restaurant details endpoint"""

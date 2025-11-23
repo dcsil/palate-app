@@ -66,7 +66,7 @@ class DeleteRestaurantResponse(BaseModel):
 
 class MultipleRestaurantDetailsRequest(BaseModel):
     """Request model for multiple restaurant details endpoint"""
-    place_ids: List[str] = Field(..., description="List of Google Place IDs", min_items=1, max_items=20)
+    place_ids: List[str] = Field(..., description="List of Google Place IDs", min_length=1, max_length=20)
     location: GeoPoint = Field(..., description="Location coordinates (required)")
 
 
