@@ -14,6 +14,7 @@ class PlacesService:
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_MAPS_API_KEY")
         self.base_url = "https://places.googleapis.com/v1"
+        self.geocoding_url = "https://maps.googleapis.com/maps/api/geocode/json"
     
     def _get_required_fields(self) -> str:
         """Get the required fields for the Places API request"""
@@ -76,6 +77,7 @@ class PlacesService:
     
     async def _get_place_details(self, place_id: str) -> Dict[str, Any]:
         """Get place details from Google Places API"""
+        print(f"DEBUG: _get_place_details called for place_id: {place_id}")
         fields = self._get_required_fields()
         headers = {
             "X-Goog-Api-Key": self.api_key,
@@ -83,11 +85,24 @@ class PlacesService:
         }
         
         details_url = f"{self.base_url}/places/{place_id}"
+        print(f"DEBUG: Making API call to: {details_url}")
+        print(f"DEBUG: Headers: {headers}")
+        
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(details_url, headers=headers)
+            print(f"DEBUG: API response status: {response.status_code}")
+            print(f"DEBUG: API response headers: {dict(response.headers)}")
+            
             if response.status_code != 200:
-                raise Exception(f"Places API error: {response.status_code} - {response.text}")
-            return response.json()
+                error_text = response.text
+                print(f"DEBUG: API error response: {error_text}")
+                raise Exception(f"Places API error: {response.status_code} - {error_text}")
+            
+            json_response = response.json()
+            print(f"DEBUG: API response type: {type(json_response)}")
+            print(f"DEBUG: API response keys: {list(json_response.keys()) if isinstance(json_response, dict) else 'Not a dict'}")
+            print(f"DEBUG: API response: {json_response}")
+            return json_response
     
     async def _get_photo_urls(self, place: Dict[str, Any], min_photo_height: int, max_photos: int) -> List[str]:
         """Get photo URLs for a place"""
@@ -152,7 +167,17 @@ class PlacesService:
     
     def _build_search_result(self, place: Dict[str, Any], photo_urls: List[str], distance_m: float) -> Dict[str, Any]:
         """Build the final search result dictionary"""
-        return {
+        print(f"DEBUG: _build_search_result called with place type: {type(place)}")
+        print(f"DEBUG: place is None: {place is None}")
+        if place:
+            print(f"DEBUG: place keys: {list(place.keys())}")
+            print(f"DEBUG: place id: {place.get('id')}")
+            print(f"DEBUG: place displayName: {place.get('displayName')}")
+        
+        print(f"DEBUG: photo_urls type: {type(photo_urls)}, length: {len(photo_urls) if photo_urls else 'None'}")
+        print(f"DEBUG: distance_m: {distance_m}")
+        
+        result = {
             "place_id": place.get("id"),
             "name": (place.get("displayName") or {}).get("text"),
             "photos": photo_urls,
@@ -212,7 +237,140 @@ class PlacesService:
             "types": place.get("types"),
             "maps_links": place.get("googleMapsLinks"),
         }
+        
+        print(f"DEBUG: Built result with place_id: {result.get('place_id')}")
+        print(f"DEBUG: Built result with name: {result.get('name')}")
+        print(f"DEBUG: Result keys: {list(result.keys())}")
+        return result
     
+    async def search_nearby_restaurants(self, user_lat: float, user_lng: float, 
+                                      radius_meters: int = 5000) -> List[Dict[str, Any]]:
+        """
+        Search for nearby restaurants using Google Places API and filter by those in our database.
+        Returns ALL restaurants within the radius, sorted by distance.
+        
+        Args:
+            user_lat: User's latitude
+            user_lng: User's longitude
+            radius_meters: Search radius in meters (max 50000)
+        
+        Returns:
+            List of restaurant place_ids and basic info, sorted by distance
+        """
+        # This function now uses Firebase for comprehensive coverage
+        # Import Firebase service here to avoid circular imports
+        from firebase_service import get_firebase_service
+        
+        firebase_service = get_firebase_service()
+        
+        # Get ALL restaurants from Firebase within the radius
+        all_restaurants = await firebase_service.get_nearby_restaurants(
+            user_lat=user_lat,
+            user_lng=user_lng,
+            limit=10000  # Large limit to get all restaurants
+        )
+        
+        # Filter by radius
+        restaurants_within_radius = [
+            r for r in all_restaurants 
+            if r.get("distance_meters", float('inf')) <= radius_meters
+        ]
+        
+        # Sort by distance
+        restaurants_within_radius.sort(key=lambda x: x.get("distance_meters", float('inf')))
+        
+        # Return simplified data for frontend pagination
+        results = []
+        for restaurant in restaurants_within_radius:
+            results.append({
+                "place_id": restaurant.get("place_id"),
+                "name": restaurant.get("name"),
+                "latitude": restaurant.get("latitude"),
+                "longitude": restaurant.get("longitude"),
+                "distance_meters": restaurant.get("distance_meters"),
+                "doc_id": restaurant.get("doc_id"),
+                "has_search_timestamp": restaurant.get("has_search_timestamp", False)
+            })
+        
+        return results
+
+    async def get_restaurants_details(self, place_ids: List[str], user_lat: float, user_lng: float,
+                                    min_photo_height: int = 400, max_photos: int = 8) -> List[Dict[str, Any]]:
+        """
+        Get detailed restaurant data for multiple place_ids using Google Places API
+        
+        Args:
+            place_ids: List of Google Place IDs (max 10)
+            user_lat: User's latitude
+            user_lng: User's longitude
+            min_photo_height: Minimum photo height in pixels
+            max_photos: Maximum number of photos to return
+        
+        Returns:
+            List of detailed restaurant data
+        """
+        if not self.api_key:
+            raise ValueError("GOOGLE_MAPS_API_KEY environment variable is required")
+        
+        if len(place_ids) > 10:
+            raise ValueError("Maximum 10 place_ids allowed per request")
+        
+        results = []
+        
+        # Process each place_id
+        for place_id in place_ids:
+            print(f"DEBUG: Processing place_id: {place_id}")
+            try:
+                # Get place details from Google Places API
+                print(f"DEBUG: Calling _get_place_details for {place_id}")
+                place = await self._get_place_details(place_id)
+                print(f"DEBUG: _get_place_details returned: {type(place)} - {place is not None}")
+                
+                if place is None:
+                    print(f"DEBUG: place is None for {place_id}, creating error result")
+                    results.append({
+                        "place_id": place_id,
+                        "error": "Google Places API returned None",
+                        "name": None,
+                        "distance_meters": None
+                    })
+                    continue
+                
+                # Get photo URLs
+                print(f"DEBUG: Getting photo URLs for {place_id}")
+                photo_urls = await self._get_photo_urls(place, min_photo_height, max_photos)
+                print(f"DEBUG: photo_urls: {len(photo_urls) if photo_urls else 'None'}")
+                
+                # Calculate distance
+                print(f"DEBUG: Calculating distance for {place_id}")
+                distance_m = self._calculate_distance(place, user_lat, user_lng)
+                print(f"DEBUG: distance_m: {distance_m}")
+                
+                # Build search result
+                print(f"DEBUG: Building search result for {place_id}")
+                search_result = self._build_search_result(place, photo_urls, distance_m)
+                print(f"DEBUG: search_result type: {type(search_result)}, is None: {search_result is None}")
+                print(f"DEBUG: search_result keys: {list(search_result.keys()) if search_result else 'None'}")
+                
+                results.append(search_result)
+                print(f"DEBUG: Successfully processed {place_id}")
+                
+            except Exception as e:
+                print(f"DEBUG: Exception processing place {place_id}: {str(e)}")
+                print(f"DEBUG: Exception type: {type(e)}")
+                import traceback
+                traceback.print_exc()
+                # Add error result
+                results.append({
+                    "place_id": place_id,
+                    "error": str(e),
+                    "name": None,
+                    "distance_meters": None
+                })
+                continue
+        
+        return results
+
     async def get_place_details(self, place_id: str, user_lat: float, user_lng: float, 
                               min_photo_height: int = 400, max_photos: int = 8) -> Dict[str, Any]:
         """
@@ -241,6 +399,221 @@ class PlacesService:
         
         # Build final result
         return self._build_search_result(place, photo_urls, distance_m)
+
+    async def get_location_info(self, latitude: float, longitude: float) -> Dict[str, Any]:
+        """
+        Get neighborhood and city information using reverse geocoding
+        
+        Args:
+            latitude: Latitude coordinate
+            longitude: Longitude coordinate
+        
+        Returns:
+            Dictionary containing neighborhood and city information
+        """
+        try:
+            if not self.api_key:
+                raise ValueError("GOOGLE_MAPS_API_KEY environment variable is required")
+            
+            # Prepare reverse geocoding request
+            params = {
+                "latlng": f"{latitude},{longitude}",
+                "key": self.api_key,
+                "result_type": "neighborhood|sublocality|locality|administrative_area_level_2"
+            }
+            
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.get(self.geocoding_url, params=params)
+                
+                if response.status_code != 200:
+                    raise Exception(f"Geocoding API error: {response.status_code} - {response.text}")
+                
+                data = response.json()
+                
+                if data.get("status") != "OK":
+                    raise Exception(f"Geocoding API error: {data.get('status')} - {data.get('error_message', 'Unknown error')}")
+                
+                results = data.get("results", [])
+                if not results:
+                    return {
+                        "neighborhood": None,
+                        "city": None
+                    }
+                
+                # Parse address components to find neighborhood and city
+                neighborhood = None
+                city = None
+                
+                for result in results:
+                    address_components = result.get("address_components", [])
+                    
+                    for component in address_components:
+                        types = component.get("types", [])
+                        long_name = component.get("long_name")
+                        
+                        # Look for neighborhood (most specific)
+                        if ("neighborhood" in types or "sublocality" in types) and not neighborhood:
+                            neighborhood = long_name
+                        # Look for city (locality or administrative_area_level_2)
+                        elif ("locality" in types or "administrative_area_level_2" in types) and not city:
+                            city = long_name
+                
+                return {
+                    "neighborhood": neighborhood,
+                    "city": city
+                }
+                
+        except Exception as e:
+            print(f"Error getting location info: {str(e)}")
+            raise e
+
+    async def get_restaurant_details(self, place_id: str) -> Dict[str, Any]:
+        """
+        Get comprehensive restaurant details from Google Places API
+        
+        Args:
+            place_id: Google Place ID
+        
+        Returns:
+            Dictionary containing comprehensive restaurant information
+        """
+        try:
+            if not self.api_key:
+                raise ValueError("GOOGLE_MAPS_API_KEY environment variable is required")
+            
+            # All fields including Enterprise and Enterprise + Atmosphere
+            fields = ",".join([
+                # Basic Info (Place Details Essentials)
+                "id", "displayName", "businessStatus", "rating", "priceLevel",
+                
+                # Location & Contact (Place Details Essentials)
+                "formattedAddress", "nationalPhoneNumber", "internationalPhoneNumber",
+                
+                # Categories & Types (Place Details Essentials)
+                "primaryType", "types",
+                
+                # Hours (Place Details Pro)
+                "regularOpeningHours",
+                
+                # Reviews & Content (Place Details Pro)
+                "editorialSummary", "generativeSummary", "reviewSummary",
+                
+                # Media (Place Details Pro)
+                "photos.name", "photos.heightPx", "photos.widthPx",
+                
+                # Maps Integration (Place Details Essentials)
+                "googleMapsUri", "websiteUri",
+                
+                # Enterprise Level Fields
+                "userRatingCount", "websiteUri",
+                
+                # Enterprise + Atmosphere Fields
+                "takeout", "delivery", "dineIn", "curbsidePickup", "reservable",
+                "servesBreakfast", "servesLunch", "servesDinner", "servesBeer", "servesWine", 
+                "servesCocktails", "servesVegetarianFood",
+                "outdoorSeating", "liveMusic", "goodForGroups", "goodForChildren", 
+                "goodForWatchingSports", "allowsDogs", "restroom",
+                "accessibilityOptions", "paymentOptions", "parkingOptions"
+            ])
+            
+            headers = {
+                "X-Goog-Api-Key": self.api_key,
+                "X-Goog-FieldMask": fields,
+            }
+            
+            url = f"{self.base_url}/places/{place_id}"
+            
+            async with httpx.AsyncClient(timeout=15) as client:
+                response = await client.get(url, headers=headers)
+                
+                if response.status_code != 200:
+                    raise Exception(f"Places API error: {response.status_code} - {response.text}")
+                
+                data = response.json()
+                
+                # Get photos
+                photo_urls = await self._get_photo_urls(data, 400, 4)
+                
+                # Helper function to convert price level string to integer
+                def parse_price_level(price_level):
+                    if price_level is None:
+                        return None
+                    if isinstance(price_level, int):
+                        return price_level
+                    if isinstance(price_level, str):
+                        price_mapping = {
+                            "PRICE_LEVEL_FREE": 0,
+                            "PRICE_LEVEL_INEXPENSIVE": 1,
+                            "PRICE_LEVEL_MODERATE": 2,
+                            "PRICE_LEVEL_EXPENSIVE": 3,
+                            "PRICE_LEVEL_VERY_EXPENSIVE": 4
+                        }
+                        return price_mapping.get(price_level)
+                    return None
+
+                # Extract all information including Enterprise and Enterprise + Atmosphere
+                return {
+                    # Basic Info (Place Details Essentials)
+                    "name": (data.get("displayName") or {}).get("text"),
+                    "business_status": data.get("businessStatus"),
+                    "rating": data.get("rating"),
+                    "price_level": parse_price_level(data.get("priceLevel")),
+                    
+                    # Location & Contact (Place Details Essentials)
+                    "formatted_address": data.get("formattedAddress"),
+                    "phone_number": data.get("nationalPhoneNumber"),
+                    "international_phone_number": data.get("internationalPhoneNumber"),
+                    
+                    # Categories & Types (Place Details Essentials)
+                    "primary_type": data.get("primaryType"),
+                    "types": data.get("types", []),
+                    
+                    # Hours (Place Details Pro)
+                    "regular_opening_hours": data.get("regularOpeningHours"),
+                    
+                    # Reviews & Content (Place Details Pro)
+                    "editorial_summary": data.get("editorialSummary"),
+                    "generative_summary": data.get("generativeSummary"),
+                    "review_summary": data.get("reviewSummary"),
+                    
+                    # Media (Place Details Pro)
+                    "photos": photo_urls,
+                    
+                    # Maps Integration (Place Details Essentials)
+                    "google_maps_uri": data.get("googleMapsUri"),
+                    "website_uri": data.get("websiteUri"),
+                    
+                    # Enterprise Level Fields
+                    "user_rating_count": data.get("userRatingCount"),
+                    
+                    # Enterprise + Atmosphere Fields
+                    "takeout": data.get("takeout"),
+                    "delivery": data.get("delivery"),
+                    "dine_in": data.get("dineIn"),
+                    "curbside_pickup": data.get("curbsidePickup"),
+                    "reservable": data.get("reservable"),
+                    "serves_breakfast": data.get("servesBreakfast"),
+                    "serves_lunch": data.get("servesLunch"),
+                    "serves_dinner": data.get("servesDinner"),
+                    "serves_beer": data.get("servesBeer"),
+                    "serves_wine": data.get("servesWine"),
+                    "serves_cocktails": data.get("servesCocktails"),
+                    "serves_vegetarian_food": data.get("servesVegetarianFood"),
+                    "outdoor_seating": data.get("outdoorSeating"),
+                    "live_music": data.get("liveMusic"),
+                    "good_for_groups": data.get("goodForGroups"),
+                    "good_for_children": data.get("goodForChildren"),
+                    "good_for_watching_sports": data.get("goodForWatchingSports"),
+                    "allows_dogs": data.get("allowsDogs"),
+                    "restroom": data.get("restroom"),
+                    "accessibility_options": data.get("accessibilityOptions"),
+                    "payment_options": data.get("paymentOptions"),
+                    "parking_options": data.get("parkingOptions")
+                }
+                
+        except Exception as e:
+            print(f"Error getting restaurant details: {str(e)}")
+            raise e
 
 
 # Global instance
