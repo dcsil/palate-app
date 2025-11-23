@@ -30,5 +30,5 @@ ENV HOME=/home/app
 EXPOSE 8080
 
 # Shell form so $PORT expands on Cloud Run
-CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}
+CMD exec uvicorn main:app --host 0.0.0.0 --port 8080
 
