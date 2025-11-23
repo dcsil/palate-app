@@ -9,7 +9,7 @@ backend/data/config/firebase-service-account.json
 palate-mvp-c892022b8347.json
 /backend/api_search/.venvas
 backend/api_search/firebase-service.json
-backend/api_search/Dockerfile
+
 backend/api_search/.env.yaml
 backend/api_search/firebase-key.json
 /backend/api_search/.venv
