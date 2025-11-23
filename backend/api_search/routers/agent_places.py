@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Body
 from typing import List, Dict, Any, Optional
-from models.requests import PlaceQuery, UserImplicitData
-from models.responses import SearchResponse, RankResponse
-from deps import get_single_source_search, get_rank_agent
+from backend.api_search.models.requests import PlaceQuery, UserImplicitData
+from backend.api_search.models.responses import SearchResponse, RankResponse
+from backend.api_search.deps import get_single_source_search, get_rank_agent
 
 router = APIRouter(tags=["search"])
 

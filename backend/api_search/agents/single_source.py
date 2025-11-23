@@ -4,8 +4,8 @@ import asyncio
 from typing import Dict, Any, List
 from rapidfuzz import fuzz, process  # pip install rapidfuzz
 
-from services.google_places import text_search
-from services.firestore import db
+from backend.api_search.services.google_places import text_search
+from backend.api_search.services.firestore import db
 
 DEMO = os.getenv("DEMO_MODE", "false").lower() == "true"
 

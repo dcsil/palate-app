@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()  # take environment variables from .env.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import health, agent_places
+from backend.api_search.routers import health, agent_places
 
 app = FastAPI(title="Agent Search API", version="1.1.0")
 

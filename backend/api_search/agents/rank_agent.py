@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.callbacks import BaseCallbackHandler
-from ..services.firestore import get_restaurants_by_place_ids
+from backend.api_search.services.firestore import get_restaurants_by_place_ids
 
 
 class TokenUsageCallback(BaseCallbackHandler):
