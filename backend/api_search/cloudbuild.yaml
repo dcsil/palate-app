@@ -10,7 +10,7 @@ steps:
       - |
         pip install --upgrade pip
         pip install -r requirements.txt
-        pip install -r tests/requirements.txt || true
+        pip install -r tests/requirements.txt
         # Set PYTHONPATH to include backend directory for test imports
         export PYTHONPATH="${PYTHONPATH}:$(pwd):$(pwd)/.."
         # Run tests - will fail build if any test fails
