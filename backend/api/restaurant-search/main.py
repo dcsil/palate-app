@@ -89,6 +89,7 @@ origins = [
     "http://localhost:8000",        # FastAPI docs
     "https://preview.flutterflow.app",  # FlutterFlow preview
     "https://palate-cve8jj.flutterflow.app",  # Your FlutterFlow app
+    "https://palate.it.com",  # custom domain
     # Add your production domains here
 ]
 

@@ -13,6 +13,7 @@ origins = [
     "http://127.0.0.1:8000",
     "https://preview.flutterflow.app",  # FF web preview host
     "https://palate-cve8jj.flutterflow.app",  # add prod domains when ready
+    "https://palate.it.com",  # custom domain
     # "https://your-custom-domain.com",
 ]
 # Add CORS middleware

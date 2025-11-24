@@ -187,6 +187,7 @@ The API is configured with CORS middleware to allow requests from:
 - `http://localhost:*` (development)
 - `https://preview.flutterflow.app` (FlutterFlow preview)
 - `https://palate-cve8jj.flutterflow.app` (production)
+- `https://palate.it.com` (custom domain)
 
 ## Dependencies
 

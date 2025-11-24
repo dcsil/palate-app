@@ -2,6 +2,20 @@ substitutions:
   _IMAGE_NAME: 'agent-search-api'
 
 steps:
+  # Install dependencies and run tests
+  - name: 'python:3.11'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt || true
+        # Set PYTHONPATH to include backend directory for test imports
+        export PYTHONPATH="${PYTHONPATH}:$(pwd):$(pwd)/.."
+        # Run tests - will fail build if any test fails
+        pytest tests/ -v --tb=short --maxfail=1 || exit 1
+
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
