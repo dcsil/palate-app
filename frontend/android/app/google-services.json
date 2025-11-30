@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "371653324669",
+    "project_id": "palate-mvp",
+    "storage_bucket": "palate-mvp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371653324669:android:79207f9b661cd3f22d6614",
+        "android_client_info": {
+          "package_name": "com.palate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "371653324669-412ijbq4cjch65tujvt3tns9koc7946v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6kdipxxe_HirfGAa0BVfMY0PbyAl_a1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "371653324669-412ijbq4cjch65tujvt3tns9koc7946v.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "371653324669-jlm1n9515esuqm7eijssmmj4gao21ksi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.palate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371653324669:android:9edb412e28bd34822d6614",
+        "android_client_info": {
+          "package_name": "com.palatemvp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "371653324669-stav1a7jj1qqhfv5bhe3ibqaf2e8jp93.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.palatemvp",
+            "certificate_hash": "9bbb3186b2189ef16d8f272bdab59362c395cbb4"
+          }
+        },
+        {
+          "client_id": "371653324669-412ijbq4cjch65tujvt3tns9koc7946v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6kdipxxe_HirfGAa0BVfMY0PbyAl_a1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "371653324669-412ijbq4cjch65tujvt3tns9koc7946v.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "371653324669-jlm1n9515esuqm7eijssmmj4gao21ksi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.palate"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
