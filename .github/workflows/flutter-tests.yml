@@ -39,14 +39,6 @@ jobs:
           Write-Host "`n=== Flutter Test Coverage Report ===" -ForegroundColor Cyan
           Write-Host "Calculating coverage excluding UI models, auth, API, Firebase integration" -ForegroundColor Yellow
           ./calculate_coverage_enhanced.ps1
-          
-      - name: Calculate coverage (Overall - All Code)
-        working-directory: frontend/palate
-        shell: pwsh
-        run: |
-          Write-Host "`n=== Overall Coverage (All Files) ===" -ForegroundColor Cyan
-          ./calculate_coverage.ps1
-        continue-on-error: true
       
       - name: Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v4
