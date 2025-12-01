@@ -6,9 +6,16 @@ A Flutter application for restaurant discovery and recommendations.
 
 This project includes comprehensive testing with automated coverage reporting.
 
-- **Test Suite:** 229 tests covering business logic, data structures, and state management
-- **Coverage:** 30% of testable code (excludes generated FlutterFlow widgets)
+- **Test Suite:** 1,056 tests covering business logic, data structures, utilities, and state management
+- **Coverage:** 76.95% of testable code (excludes UI models, auth integration, API calls, Firebase config)
+- **Overall Coverage:** 15.88% (includes all generated widgets and integration code)
 - **CI/CD:** Automated testing on every push via GitHub Actions
+
+### Coverage Breakdown
+- ✅ **Core Business Logic:** Custom functions, restaurant data models, archetypes
+- ✅ **Utilities:** Schema helpers, serialization, type conversions, formatting
+- ✅ **Backend Logic:** Firestore records, struct serialization
+- ⚠️ **Excluded from coverage:** UI models (*_model.dart), auth integration, API calls, Firebase config (requires integration testing)
 
 ### Running Tests
 
