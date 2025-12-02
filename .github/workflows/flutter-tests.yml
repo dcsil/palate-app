@@ -1,4 +1,4 @@
-name: Flutter Tests and Coverage
+name: Frontend (Flutter) Tests and Coverage
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   test:
-    name: Run Flutter Tests
+    name: Run Frontend (Flutter) Tests
     runs-on: ubuntu-latest
     
     steps:
