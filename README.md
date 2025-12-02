@@ -1,4 +1,4 @@
-# Project Name
+# Palate
 
 This repository contains the source code and documentation for the project.  
 The **main branch** serves as the stable, production-ready branch.  
