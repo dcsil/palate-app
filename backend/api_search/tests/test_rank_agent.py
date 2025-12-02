@@ -232,3 +232,78 @@ async def test_rank_agent_partial_llm_results():
     assert res["ranked_restaurants"][0]["restaurant"]["place_id"] == "2"
     assert res["ranked_restaurants"][1]["restaurant"]["place_id"] == "1"
 
+
+@pytest.mark.asyncio
+async def test_rank_agent_with_empty_justification():
+    """Test handling of restaurants with empty justification lists"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    mock_db_restaurants = [{"place_id": "1", "name": "A"}]
+    mock_llm_output = [{"place_id": "1", "justification": []}]  # Empty list
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={"Explorer": {"name": "Explorer"}}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1"], palate_archetype="Explorer")
+
+    assert res["total_restaurants"] == 1
+    assert len(res["ranked_restaurants"]) == 1
+    # Should handle empty justification gracefully
+    assert isinstance(res["ranked_restaurants"][0]["justification"], list)
+
+
+@pytest.mark.asyncio
+async def test_rank_agent_with_no_archetype():
+    """Test when palate_archetype is None or empty"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    mock_db_restaurants = [{"place_id": "1", "name": "A"}]
+    mock_llm_output = [{"place_id": "1", "justification": ["Default ranking"]}]
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1"], palate_archetype=None)
+
+    assert res["total_restaurants"] == 1
+
+
+@pytest.mark.asyncio
+async def test_rank_agent_serialize_complex_restaurant_data():
+    """Test serialization of restaurants with complex nested data"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    import datetime
+    
+    class FakeGeoPoint:
+        def __init__(self, lat, lng):
+            self.latitude = lat
+            self.longitude = lng
+
+    dt = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    gp = FakeGeoPoint(43.7, -79.4)
+
+    mock_db_restaurants = [{
+        "place_id": "1",
+        "name": "Complex Restaurant",
+        "location": gp,
+        "created_at": dt,
+        "metadata": {
+            "nested": {"deeply": {"coords": gp}},
+            "list": [dt, None, "text"]
+        }
+    }]
+    
+    mock_llm_output = [{"place_id": "1", "justification": ["Good"]}]
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={"Explorer": {"name": "Explorer"}}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1"], palate_archetype="Explorer")
+
+    assert res["total_restaurants"] == 1
+    # Check that serialization worked
+    restaurant = res["ranked_restaurants"][0]["restaurant"]
+    assert restaurant["location"] == [43.7, -79.4]
+    assert isinstance(restaurant["created_at"], str)
+

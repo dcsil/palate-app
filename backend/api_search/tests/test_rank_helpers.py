@@ -56,6 +56,51 @@ def test_extract_place_ids_and_cleaning():
     assert 'extra' not in cleaned
 
 
+def test_clean_restaurant_removes_unnecessary_fields():
+    """Test that _clean_restaurant_for_llm removes unnecessary fields"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    restaurant = {
+        "place_id": "p1",
+        "name": "Test Restaurant",
+        "rating": 4.5,
+        "user_rating_count": 100,
+        "price_level": 2,
+        "types": ["restaurant", "food"],
+        "photos": ["url1", "url2"],  # Should be removed
+        "opening_hours": {"open_now": True},  # Should be removed
+        "geometry": {"location": {"lat": 43.7, "lng": -79.4}},  # Should be removed
+        "extra_field": "value"
+    }
+
+    cleaned = runner._clean_restaurant_for_llm(restaurant)
+    assert cleaned["place_id"] == "p1"
+    assert cleaned["name"] == "Test Restaurant"
+    assert cleaned["rating"] == 4.5
+    assert "photos" not in cleaned
+    assert "opening_hours" not in cleaned
+    assert "geometry" not in cleaned
+
+
+def test_extract_place_ids_with_mixed_formats():
+    """Test extracting place_ids from restaurants with different id field names"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    restaurants = [
+        {"place_id": "p1"},
+        {"google_place_id": "p2"},
+        {"id": "p3"},  # Should also work with just 'id'
+        {}  # No id field
+    ]
+
+    ids = runner._extract_place_ids(restaurants)
+    # Should extract p1 and p2, and handle missing gracefully
+    assert "p1" in ids
+    assert "p2" in ids
+
+
 @pytest.mark.asyncio
 async def test_run_fallback_archetype():
     # Ensure fallback path when archetype not found

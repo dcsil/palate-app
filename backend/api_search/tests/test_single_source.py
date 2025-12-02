@@ -714,4 +714,45 @@ async def test_search_db_location_tuple_format(monkeypatch):
     assert res['total'] == 1
 
 
+@pytest.mark.asyncio
+async def test_search_db_float_conversion_error(monkeypatch):
+    """Test when lat/lng can't be converted to float"""
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    # Create object that will pass initial checks but fail float conversion
+    class BadNumber:
+        def __float__(self):
+            raise ValueError("Cannot convert")
+
+    docs = [
+        FakeDoc({'lat': BadNumber(), 'lng': BadNumber(), 'name': 'Bad Float'}),
+        FakeDoc({'location': [43.7, -79.4], 'name': 'Good'})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    # Should skip the bad one and return only the good one
+    assert all('Good' in r['name'] for r in res['items'])
+
+
 
