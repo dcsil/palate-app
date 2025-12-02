@@ -410,4 +410,308 @@ async def test_search_db_invalid_numeric_coords(monkeypatch):
     assert all('Good Coords' in r['name'] for r in res['items'])
 
 
+@pytest.mark.asyncio
+async def test_search_db_location_lat_lng_reversed(monkeypatch):
+    """Test [lat, lng] where second value > 90 (reversed detection)"""
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    # [lat, lng] where lng > 90
+    docs = [FakeDoc({'location': [30.0, 120.0], 'name': 'Reversed Detection'})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=30.0, lng=120.0, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    assert res['total'] == 1
+
+
+@pytest.mark.asyncio
+async def test_search_db_location_with_hemispheres(monkeypatch):
+    """Test string coordinates with hemisphere indicators"""
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    # Test S and W hemispheres (should become negative)
+    docs = [FakeDoc({'location': ['43.7 S', '79.4 W'], 'name': 'Southern Hemisphere'})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    # Search near southern hemisphere location
+    p = Payload(source='db', lat=-43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    # Should parse and potentially find the location
+
+
+@pytest.mark.asyncio
+async def test_search_db_location_tuple_geopoint_in_list(monkeypatch):
+    """Test parse_number returning tuple (GeoPoint in list)"""
+    class FakeGeoPoint:
+        def __init__(self, lat, lng):
+            self.latitude = lat
+            self.longitude = lng
+
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    # Location as list with GeoPoint object
+    gp = FakeGeoPoint(43.7, -79.4)
+    docs = [FakeDoc({'location': [gp, None], 'name': 'GeoPoint in List'})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+
+
+@pytest.mark.asyncio
+async def test_search_db_serialize_datetime(monkeypatch):
+    """Test serialization of datetime objects"""
+    import datetime
+    
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    dt = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    docs = [FakeDoc({'location': [43.7, -79.4], 'name': 'With DateTime', 'created': dt})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    assert res['total'] == 1
+    # Datetime should be serialized to ISO format string
+    assert isinstance(res['items'][0]['created'], str)
+
+
+@pytest.mark.asyncio
+async def test_search_db_serialize_nested_structures(monkeypatch):
+    """Test serialization of nested dicts and lists"""
+    class FakeGeoPoint:
+        def __init__(self, lat, lng):
+            self.latitude = lat
+            self.longitude = lng
+
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    gp = FakeGeoPoint(43.7, -79.4)
+    docs = [FakeDoc({
+        'location': [43.7, -79.4],
+        'name': 'Nested Data',
+        'metadata': {
+            'coords': gp,
+            'tags': ['a', 'b'],
+            'nested': {'inner': [1, 2, None]}
+        }
+    })]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    assert res['total'] == 1
+    # Nested GeoPoint should be serialized to list
+    assert res['items'][0]['metadata']['coords'] == [43.7, -79.4]
+
+
+@pytest.mark.asyncio
+async def test_search_db_geopoint_in_second_position(monkeypatch):
+    """Test when GeoPoint is in second position of location list"""
+    class FakeGeoPoint:
+        def __init__(self, lat, lng):
+            self.latitude = lat
+            self.longitude = lng
+
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    gp = FakeGeoPoint(43.7, -79.4)
+    docs = [FakeDoc({'location': [None, gp], 'name': 'GeoPoint Second'})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    # Should successfully parse GeoPoint from second position
+
+
+@pytest.mark.asyncio
+async def test_search_db_location_not_list_or_tuple(monkeypatch):
+    """Test when location is neither list, tuple, nor GeoPoint"""
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    docs = [
+        FakeDoc({'location': 'invalid_format', 'name': 'Bad Format'}),
+        FakeDoc({'location': [43.7, -79.4], 'name': 'Valid'})
+    ]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    # Should skip invalid location and only return the valid one
+    assert all('Valid' in r['name'] for r in res['items'])
+
+
+@pytest.mark.asyncio
+async def test_search_db_location_tuple_format(monkeypatch):
+    """Test location as tuple instead of list"""
+    class FakeDoc:
+        def __init__(self, d, id_='d1'):
+            self._d = d
+            self.id = id_
+
+        def to_dict(self):
+            return dict(self._d)
+
+    docs = [FakeDoc({'location': (43.7, -79.4), 'name': 'Tuple Location'})]
+
+    class FakeColl:
+        def limit(self, n):
+            return self
+
+        def stream(self):
+            return iter(docs)
+
+    class FakeDB:
+        def collection(self, name):
+            return FakeColl()
+
+    monkeypatch.setattr('backend.api_search.agents.single_source.db', lambda: FakeDB())
+
+    s = SingleSourceSearch()
+    p = Payload(source='db', lat=43.7, lng=-79.4, radius_m=10000)
+    res = await s.search(p)
+    assert res['source'] == 'db'
+    assert res['total'] == 1
+
+
 

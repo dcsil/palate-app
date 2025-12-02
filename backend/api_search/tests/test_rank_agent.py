@@ -129,3 +129,106 @@ def test_load_archetypes():
     assert "Explorer" in archetypes
     assert "name" in archetypes["Explorer"]
     assert archetypes["Explorer"]["name"] == "Explorer"
+
+
+@pytest.mark.asyncio
+async def test_rank_agent_with_user_data():
+    """Test that user_data is properly passed to the agent"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    mock_db_restaurants = [
+        {"place_id": "1", "name": "A", "rating": 4.5}
+    ]
+
+    mock_llm_output = [
+        {"place_id": "1", "justification": ["Good choice based on your preferences."]}
+    ]
+
+    user_data = {
+        "likes": [{"name": "Italian Place", "category": "Italian"}],
+        "saved": [{"name": "Saved Spot"}],
+        "visited": [{"name": "Visited Cafe"}],
+        "disliked": [{"name": "Bad Restaurant"}]
+    }
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={"Explorer": {"name": "Explorer"}}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1"], palate_archetype="Explorer", user_data=user_data)
+
+    assert res["total_restaurants"] == 1
+    assert len(res["ranked_restaurants"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_rank_agent_llm_returns_invalid_json():
+    """Test handling when LLM returns invalid JSON"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    mock_db_restaurants = [
+        {"place_id": "1", "name": "A"}
+    ]
+
+    # LLM returns invalid output
+    mock_llm_output = "This is not JSON"
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={"Explorer": {"name": "Explorer"}}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1"], palate_archetype="Explorer")
+
+    # Should still return restaurants in original order with default justification
+    assert res["total_restaurants"] == 1
+    assert len(res["ranked_restaurants"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_rank_agent_llm_returns_dict_instead_of_list():
+    """Test handling when LLM returns dict instead of list"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    mock_db_restaurants = [
+        {"place_id": "1", "name": "A"}
+    ]
+
+    # LLM returns dict instead of list
+    mock_llm_output = {"place_id": "1", "justification": ["Test"]}
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={"Explorer": {"name": "Explorer"}}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1"], palate_archetype="Explorer")
+
+    assert res["total_restaurants"] == 1
+    assert len(res["ranked_restaurants"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_rank_agent_partial_llm_results():
+    """Test when LLM only ranks some restaurants"""
+    with patch('backend.api_search.agents.rank_agent.AgentExecutor'):
+        runner = RankAgentRunner(agent=MagicMock())
+
+    mock_db_restaurants = [
+        {"place_id": "1", "name": "A"},
+        {"place_id": "2", "name": "B"},
+        {"place_id": "3", "name": "C"}
+    ]
+
+    # LLM only ranks 2 out of 3
+    mock_llm_output = [
+        {"place_id": "2", "justification": ["Great"]},
+        {"place_id": "1", "justification": ["Good"]}
+    ]
+
+    with patch('backend.api_search.agents.rank_agent.load_archetypes', return_value={"Explorer": {"name": "Explorer"}}), \
+         patch('backend.api_search.agents.rank_agent.asyncio.to_thread', side_effect=[mock_db_restaurants, {"output": mock_llm_output}]):
+        res = await runner.run(place_ids=["1", "2", "3"], palate_archetype="Explorer")
+
+    # Agent returns only the ranked restaurants
+    assert res["total_restaurants"] == 3
+    assert len(res["ranked_restaurants"]) == 2
+    # Check the order from LLM
+    assert res["ranked_restaurants"][0]["restaurant"]["place_id"] == "2"
+    assert res["ranked_restaurants"][1]["restaurant"]["place_id"] == "1"
+

@@ -76,3 +76,62 @@ def test_rank_endpoint_overrides():
     assert data["total_restaurants"] == 0
 
     main.app.dependency_overrides.pop(deps.get_rank_agent, None)
+
+
+def test_search_endpoint_with_all_fields():
+    """Test search endpoint with all optional fields"""
+    class FakeSvc:
+        async def search(self, payload):
+            return {"source": "db", "total": 2, "items": [{"name": "A"}, {"name": "B"}]}
+
+    main.app.dependency_overrides[deps.get_single_source_search] = lambda: FakeSvc()
+
+    client = TestClient(main.app)
+    body = {
+        "query": "pizza",
+        "source": "db",
+        "google_place_id": "ChIJ123",
+        "address": "123 Main St",
+        "lat": 43.7,
+        "lng": -79.4,
+        "radius_m": 5000
+    }
+    r = client.post('/agent/search', json=body)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total"] == 2
+
+    main.app.dependency_overrides.pop(deps.get_single_source_search, None)
+
+
+def test_rank_endpoint_with_user_data():
+    """Test rank endpoint with full user_data"""
+    class FakeRank:
+        async def run(self, place_ids, palate_archetype, user_data):
+            return {
+                "ranked_restaurants": [
+                    {"restaurant": {"place_id": "p1"}, "justification": ["Good"]}
+                ],
+                "total_restaurants": 1
+            }
+
+    main.app.dependency_overrides[deps.get_rank_agent] = lambda: FakeRank()
+
+    client = TestClient(main.app)
+    body = {
+        "place_ids": ["p1"],
+        "palate_archetype": "Comfort Seeker",
+        "user_data": {
+            "likes": [{"name": "Liked Place"}],
+            "saved": [],
+            "visited": [],
+            "disliked": []
+        }
+    }
+    r = client.post('/agent/rank', json=body)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total_restaurants"] == 1
+    assert len(data["ranked_restaurants"]) == 1
+
+    main.app.dependency_overrides.pop(deps.get_rank_agent, None)
