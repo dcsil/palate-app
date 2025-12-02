@@ -9,6 +9,7 @@ omit =
     */venv/*
     */.venv/*
     */site-packages/*
+    backend/test.py
 
 [report]
 precision = 2
