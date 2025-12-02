@@ -41,9 +41,12 @@ jobs:
           pytest api_search/tests/ \
             --cov=api_search \
             --cov-report=term \
-            --cov-report=xml \
-            --cov-report=html \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:htmlcov \
             -v
+          
+          # Ensure .coverage file exists for PR comments
+          coverage combine || true
       
       - name: Generate coverage summary
         if: always()
@@ -122,5 +125,9 @@ jobs:
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
           GITHUB_TOKEN: ${{ github.token }}
-          COVERAGE_PATH: backend/coverage.xml
+          COVERAGE_DATA_BRANCH: coverage-data
+          MINIMUM_GREEN: 80
+          MINIMUM_ORANGE: 65
         continue-on-error: true
+        env:
+          COVERAGE_PATH: backend
