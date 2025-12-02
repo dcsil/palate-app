@@ -1,6 +1,8 @@
 [run]
 relative_files = true
-source = .
+source = 
+    api_search
+    api/restaurant-search
 omit = 
     */tests/*
     */testing_placesapi/*

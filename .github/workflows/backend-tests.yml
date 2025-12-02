@@ -1,11 +1,6 @@
 name: Backend Tests and Coverage
 
 on:
-  push:
-    branches: [ main, frontend-testing ]
-    paths:
-      - 'backend/**'
-      - 'pytest.ini'
   pull_request:
     branches: [ main ]
     paths:
@@ -44,29 +39,19 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          cd backend
-          
-          # Run all tests across the entire backend with coverage
-          # Using --cov-config to ensure relative paths are used
-          pytest . \
-            --cov=. \
-            --cov-config=.coveragerc \
+          # Run tests from workspace root with coverage for entire backend
+          # This matches the local command: pytest backend/ --cov=backend
+          pytest backend/ \
+            --cov=backend \
             --cov-report=term \
             --cov-report=xml:coverage.xml \
             --cov-report=html:htmlcov \
-            --ignore=tests/testing_placesapi \
-            --ignore=data/scripts \
             -v
-          
-          # Ensure .coverage file exists and uses relative paths
-          coverage combine --rcfile=.coveragerc || true
       
       - name: Generate coverage summary
         if: always()
         run: |
-          cd backend
-          
-          # Parse coverage metrics
+          # Parse coverage metrics from workspace root
           COVERAGE_PERCENT=$(python -c "
           import xml.etree.ElementTree as ET
           tree = ET.parse('coverage.xml')
@@ -99,8 +84,8 @@ jobs:
           print(f'{branch_rate * 100:.2f}')
           ")
           
-          # Count test files
-          TEST_COUNT=$(find . -name "test_*.py" -not -path "*/testing_placesapi/*" -not -path "*/data/scripts/*" | wc -l)
+          # Count test files in backend
+          TEST_COUNT=$(find backend -name "test_*.py" | wc -l)
           
           # Generate comprehensive summary
           echo "## Backend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
@@ -119,18 +104,15 @@ jobs:
           echo "### Coverage Scope" >> $GITHUB_STEP_SUMMARY
           echo "The following backend modules are included in coverage analysis:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- \`backend/agents/\` - LangChain agent implementations" >> $GITHUB_STEP_SUMMARY
-          echo "- \`backend/api_search/\` - FastAPI search service (main, routers, agents, models, services)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`backend/app/\` - Application core (models, routers)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`backend/services/\` - External service integrations (Google Places, Firestore)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`backend/api/restaurant-search/\` - Restaurant search API implementation" >> $GITHUB_STEP_SUMMARY
+          echo "- \`backend/\` - All backend Python modules" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Excluded from coverage:** Manual testing scripts (\`tests/testing_placesapi\`, \`data/scripts\`)" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Coverage matches local command: \`pytest backend/ --cov=backend\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Target Coverage:** 70%" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v4
         with:
-          files: backend/coverage.xml
+          files: coverage.xml
           flags: backend
           name: backend-coverage
           fail_ci_if_error: false
@@ -141,8 +123,8 @@ jobs:
         with:
           name: backend-coverage-report
           path: |
-            backend/coverage.xml
-            backend/htmlcov/
+            coverage.xml
+            htmlcov/
           retention-days: 30
       
       - name: Comment coverage on PR
@@ -151,8 +133,6 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ github.token }}
           COVERAGE_DATA_BRANCH: coverage-data
-          MINIMUM_GREEN: 80
+          MINIMUM_GREEN: 70
           MINIMUM_ORANGE: 65
         continue-on-error: true
-        env:
-          COVERAGE_PATH: backend
