@@ -64,7 +64,7 @@ jobs:
         run: |
           cd backend
           
-          # Parse coverage percentage
+          # Parse coverage metrics
           COVERAGE_PERCENT=$(python -c "
           import xml.etree.ElementTree as ET
           tree = ET.parse('coverage.xml')
@@ -73,7 +73,6 @@ jobs:
           print(f'{line_rate * 100:.2f}')
           ")
           
-          # Parse line counts
           LINES_COVERED=$(python -c "
           import xml.etree.ElementTree as ET
           tree = ET.parse('coverage.xml')
@@ -90,28 +89,41 @@ jobs:
           print(lines_valid)
           ")
           
-          # Generate GitHub Actions summary
-          echo "## Backend Test Coverage Summary 🐍" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **All Tests Passed**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "**${COVERAGE_PERCENT}%** - Entire Backend" >> $GITHUB_STEP_SUMMARY
-          echo "- 📈 Lines Covered: ${LINES_COVERED} / ${LINES_VALID}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          BRANCH_RATE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          branch_rate = float(root.attrib.get('branch-rate', 0))
+          print(f'{branch_rate * 100:.2f}')
+          ")
           
-          # Add coverage badge color based on percentage
-          if (( $(echo "$COVERAGE_PERCENT >= 80" | bc -l) )); then
-            echo "🟢 **Excellent coverage!**" >> $GITHUB_STEP_SUMMARY
-          elif (( $(echo "$COVERAGE_PERCENT >= 65" | bc -l) )); then
-            echo "🟡 **Good coverage**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "🔴 **Coverage needs improvement**" >> $GITHUB_STEP_SUMMARY
-          fi
+          # Count test files
+          TEST_COUNT=$(find . -name "test_*.py" -not -path "*/testing_placesapi/*" -not -path "*/data/scripts/*" | wc -l)
           
+          # Generate comprehensive summary
+          echo "## Backend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **Scope:** All backend code (agents, api_search, app, services, api)" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Execution Status" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** All tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Files Executed:** ${TEST_COUNT}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "**Total Line Coverage:** ${COVERAGE_PERCENT}%" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch Coverage:** ${BRANCH_RATE}%" >> $GITHUB_STEP_SUMMARY
+          echo "**Lines Covered:** ${LINES_COVERED}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total Lines:** ${LINES_VALID}" >> $GITHUB_STEP_SUMMARY
+          echo "**Uncovered Lines:** $((LINES_VALID - LINES_COVERED))" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage Scope" >> $GITHUB_STEP_SUMMARY
+          echo "The following backend modules are included in coverage analysis:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- \`backend/agents/\` - LangChain agent implementations" >> $GITHUB_STEP_SUMMARY
+          echo "- \`backend/api_search/\` - FastAPI search service (main, routers, agents, models, services)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`backend/app/\` - Application core (models, routers)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`backend/services/\` - External service integrations (Google Places, Firestore)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`backend/api/restaurant-search/\` - Restaurant search API implementation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Excluded from coverage:** Manual testing scripts (\`tests/testing_placesapi\`, \`data/scripts\`)" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v4
