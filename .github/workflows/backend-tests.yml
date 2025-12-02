@@ -47,8 +47,10 @@ jobs:
           cd backend
           
           # Run all tests across the entire backend with coverage
+          # Using --cov-config to ensure relative paths are used
           pytest . \
             --cov=. \
+            --cov-config=.coveragerc \
             --cov-report=term \
             --cov-report=xml:coverage.xml \
             --cov-report=html:htmlcov \
@@ -56,8 +58,8 @@ jobs:
             --ignore=data/scripts \
             -v
           
-          # Ensure .coverage file exists for PR comments
-          coverage combine || true
+          # Ensure .coverage file exists and uses relative paths
+          coverage combine --rcfile=.coveragerc || true
       
       - name: Generate coverage summary
         if: always()
