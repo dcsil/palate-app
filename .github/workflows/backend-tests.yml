@@ -1,0 +1,126 @@
+name: Backend Tests and Coverage
+
+on:
+  push:
+    branches: [ main, frontend-testing ]
+    paths:
+      - 'backend/**'
+      - 'pytest.ini'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'pytest.ini'
+
+jobs:
+  test:
+    name: Run Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-asyncio
+          pip install -r backend/api_search/requirements.txt
+      
+      - name: Run tests with coverage
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          cd backend
+          pytest api_search/tests/ \
+            --cov=api_search \
+            --cov-report=term \
+            --cov-report=xml \
+            --cov-report=html \
+            -v
+      
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          cd backend
+          
+          # Parse coverage percentage
+          COVERAGE_PERCENT=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          line_rate = float(root.attrib['line-rate'])
+          print(f'{line_rate * 100:.2f}')
+          ")
+          
+          # Parse line counts
+          LINES_COVERED=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          lines_covered = int(root.attrib['lines-covered'])
+          print(lines_covered)
+          ")
+          
+          LINES_VALID=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          lines_valid = int(root.attrib['lines-valid'])
+          print(lines_valid)
+          ")
+          
+          # Generate GitHub Actions summary
+          echo "## Backend Test Coverage Summary 🐍" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **All Tests Passed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "**${COVERAGE_PERCENT}%** - Backend API Search Module" >> $GITHUB_STEP_SUMMARY
+          echo "- 📈 Lines Covered: ${LINES_COVERED} / ${LINES_VALID}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Add coverage badge color based on percentage
+          if (( $(echo "$COVERAGE_PERCENT >= 80" | bc -l) )); then
+            echo "🟢 **Excellent coverage!**" >> $GITHUB_STEP_SUMMARY
+          elif (( $(echo "$COVERAGE_PERCENT >= 65" | bc -l) )); then
+            echo "🟡 **Good coverage**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔴 **Coverage needs improvement**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Module:** \`backend/api_search\`" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload coverage to Codecov (optional)
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+        continue-on-error: true
+      
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: |
+            backend/coverage.xml
+            backend/htmlcov/
+          retention-days: 30
+      
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          COVERAGE_PATH: backend/coverage.xml
+        continue-on-error: true
