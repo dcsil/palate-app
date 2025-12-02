@@ -5,7 +5,7 @@ The **main branch** serves as the stable, production-ready branch.
 
 ---
 
-## 🌿 Branching Strategy
+## Branching Strategy
 
 - **main** – Stable branch, always contains production-ready code.  
 - **dev** – Active development branch where features are merged before release.  
@@ -20,7 +20,7 @@ The **main branch** serves as the stable, production-ready branch.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 Clone and switch to the development branch:
 ```bash
