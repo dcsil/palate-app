@@ -43,6 +43,7 @@ jobs:
           # This matches the local command: pytest backend/ --cov=backend
           pytest backend/ \
             --cov=backend \
+            --cov-config=.coveragerc \
             --cov-report=term \
             --cov-report=xml:coverage.xml \
             --cov-report=html:htmlcov \
