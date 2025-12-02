@@ -54,3 +54,26 @@ def test_restaurant_by_place_ids_and_get_restaurants():
         restaurants = firestore.get_restaurants_by_place_ids(["a", "b"])
         assert isinstance(restaurants, list)
         assert any(r["place_id"] == "a" for r in restaurants)
+
+
+def test_db_initialization():
+    """Test that db() function initializes client only once"""
+    # Reset the global _db
+    firestore._db = None
+    
+    with patch('backend.api_search.services.firestore.firestore.Client') as mock_client:
+        mock_instance = MagicMock()
+        mock_client.return_value = mock_instance
+        
+        # First call should create client
+        db1 = firestore.db()
+        assert db1 == mock_instance
+        assert mock_client.call_count == 1
+        
+        # Second call should reuse existing client
+        db2 = firestore.db()
+        assert db2 == mock_instance
+        assert mock_client.call_count == 1  # Should not create another client
+        
+        # Reset for other tests
+        firestore._db = None

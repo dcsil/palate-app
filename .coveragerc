@@ -1,0 +1,26 @@
+[run]
+relative_files = true
+source = backend
+omit = 
+    */tests/*
+    */testing_placesapi/*
+    */data/scripts/*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+    */site-packages/*
+    backend/test.py
+
+[report]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[html]
+directory = htmlcov
+
+[paths]
+source =
+    backend/
+    /home/runner/work/palate-app/palate-app/backend/
+

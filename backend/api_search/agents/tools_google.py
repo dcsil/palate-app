@@ -2,7 +2,7 @@ from langchain.tools import tool
 import os
 from dotenv import load_dotenv
 
-from services.google_places import text_search
+from backend.api_search.services.google_places import text_search
 
 load_dotenv()  # take environment variables from .env.
 

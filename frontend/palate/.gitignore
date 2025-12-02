@@ -1,0 +1,12 @@
+﻿# Flutter build artifacts
+build/
+coverage/
+
+# Flutter local environment
+.flutter-plugins-dependencies
+
+# iOS build artifacts
+ios/Flutter/ephemeral/
+
+# Tool artifacts
+.dart_tool/

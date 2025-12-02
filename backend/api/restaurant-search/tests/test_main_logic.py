@@ -78,6 +78,7 @@ async def test_get_multiple_restaurant_details_concurrent(monkeypatch):
     bg = DummyBackgroundTasks()
     res = await main.get_multiple_restaurant_details(Req(), bg)
     assert res.total_found == 2
+
     # background tasks should be added for both place_ids (google_places)
     assert len(bg.tasks) == 2
 

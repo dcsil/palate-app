@@ -48,4 +48,32 @@ def test_get_restaurant_details_requires_api_key():
     s.api_key = None
 
     with pytest.raises(ValueError):
-        asyncio.run(s.get_restaurant_details("p1"))
+        asyncio.run(s.get_restaurant_details("ChIJ123"))
+
+
+def test_calculate_distance_with_different_coords():
+    """Test distance calculation with non-zero distance"""
+    s = PlacesService()
+    place = {
+        "location": {"latitude": 43.6532, "longitude": -79.3832}  # Toronto
+    }
+    
+    # Calculate distance to a different point
+    dist = s._calculate_distance(place, 43.7, -79.4)
+    assert dist > 0
+    assert dist < 10000  # Should be less than 10km
+
+
+def test_build_search_result_missing_fields():
+    """Test building result with minimal place data"""
+    s = PlacesService()
+    place = {
+        "id": "minimal_id",
+        "displayName": {"text": "Minimal Place"}
+    }
+    
+    result = s._build_search_result(place, [], 0.0)
+    assert result["place_id"] == "minimal_id"
+    assert result["name"] == "Minimal Place"
+    assert result["photos"] == []
+    assert result["distance_meters"] == 0.0
