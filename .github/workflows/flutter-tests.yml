@@ -3,12 +3,8 @@ name: Frontend (Flutter) Tests and Coverage
 on:
   push:
     branches: [ main, frontend-testing ]
-    paths:
-      - 'frontend/palate/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'frontend/palate/**'
 
 jobs:
   test:
