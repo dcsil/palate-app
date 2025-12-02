@@ -32,14 +32,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov pytest-asyncio
           pip install -r backend/api_search/requirements.txt
+          pip install -r backend/api/restaurant-search/requirements.txt
       
       - name: Run tests with coverage
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           cd backend
-          pytest api_search/tests/ \
-            --cov=api_search \
+          pytest \
+            api_search/tests/ \
+            api/restaurant-search/tests/ \
+            --cov=. \
             --cov-report=term \
             --cov-report=xml:coverage.xml \
             --cov-report=html:htmlcov \
@@ -53,54 +56,127 @@ jobs:
         run: |
           cd backend
           
-          # Parse coverage percentage
-          COVERAGE_PERCENT=$(python -c "
+          # Parse comprehensive coverage data
+          COVERAGE_DATA=$(python -c "
           import xml.etree.ElementTree as ET
+          from pathlib import Path
+          
           tree = ET.parse('coverage.xml')
           root = tree.getroot()
+          
+          # Overall stats
           line_rate = float(root.attrib['line-rate'])
-          print(f'{line_rate * 100:.2f}')
-          ")
-          
-          # Parse line counts
-          LINES_COVERED=$(python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('coverage.xml')
-          root = tree.getroot()
           lines_covered = int(root.attrib['lines-covered'])
-          print(lines_covered)
-          ")
-          
-          LINES_VALID=$(python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('coverage.xml')
-          root = tree.getroot()
           lines_valid = int(root.attrib['lines-valid'])
-          print(lines_valid)
+          coverage_percent = line_rate * 100
+          
+          # Per-package breakdown
+          packages = {}
+          for package in root.findall('.//package'):
+              pkg_name = package.attrib['name']
+              pkg_line_rate = float(package.attrib['line-rate'])
+              pkg_lines_covered = int(package.attrib['lines-covered'])
+              pkg_lines_valid = int(package.attrib['lines-valid'])
+              packages[pkg_name] = {
+                  'coverage': pkg_line_rate * 100,
+                  'covered': pkg_lines_covered,
+                  'total': pkg_lines_valid
+              }
+          
+          # Count test files
+          import glob
+          test_files = len(glob.glob('api_search/tests/test_*.py')) + len(glob.glob('api/restaurant-search/tests/test_*.py'))
+          
+          print(f'{coverage_percent:.2f}|{lines_covered}|{lines_valid}|{test_files}', end='')
+          
+          # Print package details
+          for pkg, data in sorted(packages.items()):
+              print(f'|{pkg}:{data[\"coverage\"]:.1f}%({data[\"covered\"]}/{data[\"total\"]})', end='')
           ")
           
-          # Generate GitHub Actions summary
-          echo "## Backend Test Coverage Summary 🐍" >> $GITHUB_STEP_SUMMARY
+          # Parse the output
+          IFS='|' read -r COVERAGE_PERCENT LINES_COVERED LINES_VALID TEST_COUNT PACKAGE_DETAILS <<< "$COVERAGE_DATA"
+          
+          # Generate comprehensive GitHub Actions summary
+          echo "## 🐍 Backend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **All Tests Passed**" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Test Execution Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "**${COVERAGE_PERCENT}%** - Backend API Search Module" >> $GITHUB_STEP_SUMMARY
-          echo "- 📈 Lines Covered: ${LINES_COVERED} / ${LINES_VALID}" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Files** | ${TEST_COUNT} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Directories** | \`api_search/tests/\`, \`api/restaurant-search/tests/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | ✅ All tests passed |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Add coverage badge color based on percentage
+          echo "### 📊 Overall Coverage Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Add coverage badge
           if (( $(echo "$COVERAGE_PERCENT >= 80" | bc -l) )); then
-            echo "🟢 **Excellent coverage!**" >> $GITHUB_STEP_SUMMARY
+            BADGE="🟢"
+            STATUS="Excellent"
           elif (( $(echo "$COVERAGE_PERCENT >= 65" | bc -l) )); then
-            echo "🟡 **Good coverage**" >> $GITHUB_STEP_SUMMARY
+            BADGE="🟡"
+            STATUS="Good"
           else
-            echo "🔴 **Coverage needs improvement**" >> $GITHUB_STEP_SUMMARY
+            BADGE="🔴"
+            STATUS="Needs Improvement"
           fi
           
+          echo "| Coverage | Lines Covered | Total Lines | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|---------------|-------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **${COVERAGE_PERCENT}%** | ${LINES_COVERED} | ${LINES_VALID} | ${BADGE} ${STATUS} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📦 Module-by-Module Breakdown" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage analysis across **entire backend codebase**:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse and display package details
+          python -c "
+          import xml.etree.ElementTree as ET
+          
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          
+          print('| Module | Coverage | Lines Covered | Total Lines |')
+          print('|--------|----------|---------------|-------------|')
+          
+          for package in root.findall('.//package'):
+              pkg_name = package.attrib['name'].replace('.', '/')
+              pkg_line_rate = float(package.attrib['line-rate'])
+              pkg_coverage = pkg_line_rate * 100
+              pkg_lines_covered = int(package.attrib['lines-covered'])
+              pkg_lines_valid = int(package.attrib['lines-valid'])
+              
+              if pkg_lines_valid > 0:  # Only show packages with code
+                  badge = '🟢' if pkg_coverage >= 80 else '🟡' if pkg_coverage >= 65 else '🔴'
+                  print(f'| {badge} \`{pkg_name}\` | **{pkg_coverage:.1f}%** | {pkg_lines_covered} | {pkg_lines_valid} |')
+          " >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Coverage Scope" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This report covers the **complete backend**, including:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **API Search Module** (\`backend/api_search/\`)" >> $GITHUB_STEP_SUMMARY
+          echo "  - LangChain agents (rank agent, single source)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Agent tools (Google Places, Firestore DB)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Service integrations (Google Places, Firestore)" >> $GITHUB_STEP_SUMMARY
+          echo "  - FastAPI routers and dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Restaurant Search API** (\`backend/api/restaurant-search/\`)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Places service (async/sync operations)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Firebase helpers and integration" >> $GITHUB_STEP_SUMMARY
+          echo "  - Main business logic" >> $GITHUB_STEP_SUMMARY
+          echo "  - Utility functions" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **Module:** \`backend/api_search\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📁 **Coverage report artifacts**: Available for download for 30 days" >> $GITHUB_STEP_SUMMARY
+          echo "📈 **Trend tracking**: Compare coverage across commits and PRs" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v4
