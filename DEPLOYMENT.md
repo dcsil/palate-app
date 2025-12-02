@@ -1,78 +1,40 @@
 # Deployment Guide
 
-This document provides comprehensive instructions for running the application locally and deploying it to Google Cloud Platform using Docker, Artifact Registry, and Cloud Run.
+Complete guide for running locally and deploying to Google Cloud Platform.
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Local Development](#local-development)
-  - [Frontend (Flutter)](#frontend-flutter)
-  - [Backend: API Search Service](#backend-api-search-service)
-  - [Backend: Restaurant Search API](#backend-restaurant-search-api)
 - [Docker Setup](#docker-setup)
-  - [Building Docker Images](#building-docker-images)
-  - [Running Containers Locally](#running-containers-locally)
 - [Google Cloud Deployment](#google-cloud-deployment)
-  - [Initial Setup](#initial-setup)
-  - [Artifact Registry Setup](#artifact-registry-setup)
-  - [Deploying to Cloud Run](#deploying-to-cloud-run)
-  - [Environment Variables in Cloud Run](#environment-variables-in-cloud-run)
-- [Environment Variables Reference](#environment-variables-reference)
+  - [CI/CD Setup](#cicd-setup)
+- [Environment Variables](#environment-variables)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Prerequisites
 
-### Required Software
+### Software
+- **Python 3.11+** - [Download](https://www.python.org/downloads/)
+- **Node.js 18+** - [Download](https://nodejs.org/) (for Flutter web)
+- **Flutter SDK 3.0+** - [Download](https://flutter.dev/docs/get-started/install)
+- **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop)
+- **Google Cloud SDK** - [Download](https://cloud.google.com/sdk/docs/install)
+- **Git** - [Download](https://git-scm.com/downloads)
 
-1. **Python 3.11+**
-   - Download from [python.org](https://www.python.org/downloads/)
-   - Verify installation: `python --version`
+### Accounts & Setup
+1. **GCP Project** - Create at [console.cloud.google.com](https://console.cloud.google.com), enable billing
+2. **Firebase Project** - Create at [console.firebase.google.com](https://console.firebase.google.com), link to GCP, enable Firestore
+3. **API Keys** - Google Places API, Google Maps API, OpenAI API
+4. **Service Account** - Create in GCP Console, download JSON key, grant roles: `Cloud Datastore User`, `Firebase Admin SDK Administrator Service Agent`
 
-2. **Node.js 18+ and npm**
-   - Required for Flutter web dependencies
-   - Download from [nodejs.org](https://nodejs.org/)
-
-3. **Flutter SDK 3.0+**
-   - Download from [flutter.dev](https://flutter.dev/docs/get-started/install)
-   - Verify installation: `flutter --version`
-   - Ensure Flutter is on the stable channel: `flutter channel stable`
-
-4. **Docker Desktop**
-   - Download from [docker.com](https://www.docker.com/products/docker-desktop)
-   - Verify installation: `docker --version`
-
-5. **Google Cloud SDK (gcloud)**
-   - Download from [cloud.google.com/sdk](https://cloud.google.com/sdk/docs/install)
-   - Verify installation: `gcloud --version`
-   - Authenticate: `gcloud auth login`
-   - Set default project: `gcloud config set project YOUR_PROJECT_ID`
-
-6. **Git**
-   - Download from [git-scm.com](https://git-scm.com/downloads)
-
-### Required Accounts and Services
-
-1. **Google Cloud Platform Account**
-   - Create a project at [console.cloud.google.com](https://console.cloud.google.com)
-   - Enable billing
-   - Note your Project ID
-
-2. **Firebase Project**
-   - Create at [console.firebase.google.com](https://console.firebase.google.com)
-   - Link to your GCP project
-   - Enable Firestore Database
-
-3. **API Keys**
-   - Google Places API key (enable Places API in GCP Console)
-   - Google Maps API key (enable Maps API in GCP Console)
-   - OpenAI API key (for rank agent functionality)
-
-4. **Service Account Credentials**
-   - Create a service account in GCP Console
-   - Download JSON key file
-   - Grant roles: Cloud Datastore User, Firebase Admin SDK Administrator Service Agent
+**Initial gcloud setup:**
+```bash
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+```
 
 ---
 
@@ -80,274 +42,117 @@ This document provides comprehensive instructions for running the application lo
 
 ### Frontend (Flutter)
 
-#### Installation
-
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend/palate
-   ```
-
-2. **Install Flutter dependencies:**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Verify Flutter setup:**
-   ```bash
-   flutter doctor
-   ```
-   Ensure all checks pass (especially for your target platform: Android, iOS, or Web).
-
-#### Running Locally
-
-**For Web (Recommended for development):**
 ```bash
-flutter run -d chrome
+cd frontend/palate
+flutter pub get
+flutter doctor  # Verify setup
 ```
 
-**For Android:**
-```bash
-flutter run -d android
-```
+**Run:**
+- Web: `flutter run -d chrome`
+- Android: `flutter run -d android`
+- iOS: `flutter run -d ios` (macOS only)
 
-**For iOS (macOS only):**
-```bash
-flutter run -d ios
-```
-
-The app will start on:
-- **Web**: `http://localhost:PORT` (port assigned automatically)
-- **Android/iOS**: Deployed to connected device/emulator
-
-#### Environment Configuration
-
-The Flutter app connects to backend services. Ensure backend services are running and update API endpoints in the Flutter code if needed.
-
-**Key Configuration Files:**
-- `lib/backend/` - Backend API client configurations
-- `firebase/` - Firebase configuration files
-- `android/app/google-services.json` - Android Firebase config
-- `ios/Runner/GoogleService-Info.plist` - iOS Firebase config
+**Config files:** `lib/backend/`, `firebase/`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`
 
 ---
 
 ### Backend: API Search Service
 
-The API Search service provides AI-powered restaurant search and ranking using LangChain and OpenAI.
+**Location:** `backend/api_search`
 
-#### Installation
-
-1. **Navigate to service directory:**
-   ```bash
-   cd backend/api_search
-   ```
-
-2. **Create virtual environment (recommended):**
-   ```bash
-   python -m venv .venv
-   
-   # On Windows:
-   .venv\Scripts\activate
-   
-   # On macOS/Linux:
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-#### Environment Setup
-
-1. **Create `.env` file in `backend/api_search/`:**
-   ```env
-   # Google Cloud Platform
-   GCP_PROJECT=your-gcp-project-id
-   GOOGLE_APPLICATION_CREDENTIALS=./firebase-service.json
-   
-   # Google Places API
-   GOOGLE_PLACES_API_KEY=your-google-places-api-key
-   
-   # OpenAI API (optional, depending on which LLM to use)
-   OPENAI_API_KEY=your-openai-api-key
-   
-   # Demo Mode (optional - set to true for testing without API calls)
-   DEMO_MODE=false
-   ```
-
-2. **Firebase Service Account:**
-   - Download service account JSON from Firebase Console
-   - Save as `firebase-service.json` in `backend/api_search/`
-   - Ensure file has Firestore read/write permissions
-
-3. **Enable Required APIs:**
-   - Google Places API
-   - Firestore API
-   - (In GCP Console)
-
-#### Running Locally
-
-**Development mode (with auto-reload):**
+**Setup:**
 ```bash
-cd backend/api_search
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Environment (`.env` file):**
+```env
+GCP_PROJECT=your-gcp-project-id
+GOOGLE_APPLICATION_CREDENTIALS=./firebase-service.json
+GOOGLE_PLACES_API_KEY=your-key
+OPENAI_API_KEY=your-key
+DEMO_MODE=false
+```
+
+**Firebase:** Download service account JSON → save as `firebase-service.json` in `backend/api_search/`
+
+**Run:**
+```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Production mode:**
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
+**Endpoints:**
+- `GET /health` - Health check
+- `POST /agent/search` - Search restaurants
+- `POST /agent/rank` - Rank restaurants by archetype
 
-The API will be available at:
-- **API**: `http://127.0.0.1:8000`
-- **Interactive Docs**: `http://127.0.0.1:8000/docs`
-- **Alternative Docs**: `http://127.0.0.1:8000/redoc`
-- **Health Check**: `http://127.0.0.1:8000/health`
-
-#### API Endpoints
-
-- `GET /health` - Health check endpoint
-- `POST /agent/search` - Search restaurants (Google Places or Firestore)
-- `POST /agent/rank` - Rank restaurants by palate archetype
+**URLs:** `http://127.0.0.1:8000` | Docs: `/docs` | Health: `/health`
 
 ---
 
 ### Backend: Restaurant Search API
 
-The Restaurant Search API provides restaurant details, location information, and Firebase integration.
+**Location:** `backend/api/restaurant-search`
 
-#### Installation
-
-1. **Navigate to service directory:**
-   ```bash
-   cd backend/api/restaurant-search
-   ```
-
-2. **Create virtual environment (recommended):**
-   ```bash
-   python -m venv venv
-   
-   # On Windows:
-   venv\Scripts\activate
-   
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-#### Environment Setup
-
-1. **Create `.env` file in `backend/api/restaurant-search/`:**
-   ```env
-   # Google Maps API Key
-   GOOGLE_MAPS_API_KEY=your-google-maps-api-key
-   
-   # Google Cloud Project ID (required for Application Default Credentials)
-   GOOGLE_CLOUD_PROJECT=your-project-id
-   
-   # Firebase Service Account (Optional - for local development only)
-   # Set this environment variable with the JSON content of your service account key
-   # FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
-   
-   # Environment (optional)
-   ENVIRONMENT=development
-   ```
-
-2. **Firebase Setup:**
-   - For local development, you can set `FIREBASE_SERVICE_ACCOUNT_JSON` with the full JSON content
-   - For production/Cloud Run, use Application Default Credentials (ADC)
-   - Ensure service account has Firestore permissions
-
-3. **Enable Required APIs:**
-   - Google Maps API (Places API, Geocoding API)
-   - Firestore API
-   - (In GCP Console)
-
-#### Running Locally
-
-**Development mode (with auto-reload):**
+**Setup:**
 ```bash
-cd backend/api/restaurant-search
+python -m venv venv
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Environment (`.env` file):**
+```env
+GOOGLE_MAPS_API_KEY=your-key
+GOOGLE_CLOUD_PROJECT=your-project-id
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}  # Optional for local
+ENVIRONMENT=development
+```
+
+**Run:**
+```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8001
 ```
 
-**Production mode:**
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8001
-```
+**Endpoints:**
+- `GET /health`, `GET /ready` - Health checks
+- `POST /location` - Get location from coordinates
+- `POST /restaurants/search` - Search in radius
+- `POST /restaurant_details` - Single restaurant details
+- `POST /multiple_restaurant_details` - Multiple restaurants
+- `DELETE /restaurant` - Delete restaurant
 
-The API will be available at:
-- **API**: `http://127.0.0.1:8001`
-- **Interactive Docs**: `http://127.0.0.1:8001/docs`
-- **Health Check**: `http://127.0.0.1:8001/health`
-
-#### API Endpoints
-
-- `GET /` - Root endpoint with service info
-- `GET /health` - Health check
-- `GET /ready` - Readiness check
-- `POST /location` - Get location info from coordinates
-- `POST /restaurants/search` - Search restaurants in radius
-- `POST /restaurant_details` - Get single restaurant details
-- `POST /multiple_restaurant_details` - Get multiple restaurant details concurrently
-- `DELETE /restaurant` - Delete restaurant from database
+**URLs:** `http://127.0.0.1:8001` | Docs: `/docs` | Health: `/health`
 
 ---
 
 ## Docker Setup
 
-### Building Docker Images
+### Build Images
 
-#### API Search Service
-
-1. **Navigate to service directory:**
-   ```bash
-   cd backend/api_search
-   ```
-
-2. **Build Docker image:**
-   ```bash
-   docker build -t agent-search-api:latest .
-   ```
-
-3. **Verify image:**
-   ```bash
-   docker images | grep agent-search-api
-   ```
-
-#### Restaurant Search API
-
-1. **Navigate to service directory:**
-   ```bash
-   cd backend/api/restaurant-search
-   ```
-
-2. **Build Docker image:**
-   ```bash
-   docker build -t restaurant-search-api:latest .
-   ```
-
-3. **Verify image:**
-   ```bash
-   docker images | grep restaurant-search-api
-   ```
-
-### Running Containers Locally
-
-#### API Search Service
-
+**API Search Service:**
 ```bash
-docker run -d \
-  --name agent-search-api \
-  -p 8000:8080 \
-  -e GCP_PROJECT=your-gcp-project-id \
+cd backend/api_search
+docker build -t agent-search-api:latest .
+```
+
+**Restaurant Search API:**
+```bash
+cd backend/api/restaurant-search
+docker build -t restaurant-search-api:latest .
+```
+
+### Run Locally
+
+**API Search Service:**
+```bash
+docker run -d --name agent-search-api -p 8000:8080 \
+  -e GCP_PROJECT=your-project-id \
   -e GOOGLE_PLACES_API_KEY=your-key \
   -e OPENAI_API_KEY=your-key \
   -e GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-service.json \
@@ -355,37 +160,21 @@ docker run -d \
   agent-search-api:latest
 ```
 
-**Note:** Replace paths and keys with your actual values.
-
-#### Restaurant Search API
-
+**Restaurant Search API:**
 ```bash
-docker run -d \
-  --name restaurant-search-api \
-  -p 8001:8080 \
+docker run -d --name restaurant-search-api -p 8001:8080 \
   -e GOOGLE_MAPS_API_KEY=your-key \
   -e GOOGLE_CLOUD_PROJECT=your-project-id \
   -e FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' \
   restaurant-search-api:latest
 ```
 
-**Note:** For `FIREBASE_SERVICE_ACCOUNT_JSON`, provide the full JSON content as a single-line string.
-
-#### Verify Containers
-
+**Manage containers:**
 ```bash
-# Check running containers
-docker ps
-
-# View logs
-docker logs agent-search-api
-docker logs restaurant-search-api
-
-# Stop containers
-docker stop agent-search-api restaurant-search-api
-
-# Remove containers
-docker rm agent-search-api restaurant-search-api
+docker ps                    # List running
+docker logs <container-name> # View logs
+docker stop <container-name> # Stop
+docker rm <container-name>   # Remove
 ```
 
 ---
@@ -394,242 +183,244 @@ docker rm agent-search-api restaurant-search-api
 
 ### Initial Setup
 
-1. **Authenticate with Google Cloud:**
+```bash
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project YOUR_PROJECT_ID
+
+# Enable APIs
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  firestore.googleapis.com
+```
+
+### Artifact Registry
+
+```bash
+# Create repository
+gcloud artifacts repositories create palate-repos \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description="Docker repository for Palate application"
+
+# Configure Docker auth
+gcloud auth configure-docker us-central1-docker.pkg.dev
+```
+
+### CI/CD Setup
+
+The project uses **Google Cloud Build** for automated CI/CD pipelines. Each service has a `cloudbuild.yaml` that defines the build, test, and deployment process.
+
+#### Pipeline Workflow
+
+Each `cloudbuild.yaml` configures a pipeline that:
+1. **Tests** - Runs pytest test suite (fails build if tests fail)
+2. **Builds** - Creates Docker image from Dockerfile
+3. **Pushes** - Uploads image to Container Registry/Artifact Registry
+4. **Deploys** - Automatically deploys to Cloud Run
+
+#### Setting Up Automatic Triggers
+
+**Option 1: GitHub/GitLab Integration (Recommended)**
+
+1. **Connect Repository:**
    ```bash
-   gcloud auth login
-   gcloud auth application-default login
+   # Via Console: Cloud Build → Triggers → Connect Repository
+   # Or via CLI:
+   gcloud builds triggers create github \
+     --name="api-search-cicd" \
+     --repo-name="YOUR_REPO" \
+     --repo-owner="YOUR_GITHUB_USERNAME" \
+     --branch-pattern="^main$" \
+     --build-config="backend/api_search/cloudbuild.yaml"
    ```
 
-2. **Set your project:**
-   ```bash
-   gcloud config set project YOUR_PROJECT_ID
-   ```
+2. **Configure Triggers:**
+   - Go to [Cloud Build Triggers](https://console.cloud.google.com/cloud-build/triggers)
+   - Click "Create Trigger"
+   - Connect your GitHub/GitLab repository
+   - Set trigger conditions (branch, path, etc.)
+   - Point to `cloudbuild.yaml` file location
 
-3. **Enable required APIs:**
-   ```bash
-   gcloud services enable \
-     run.googleapis.com \
-     cloudbuild.googleapis.com \
-     artifactregistry.googleapis.com \
-     firestore.googleapis.com
-   ```
+**Option 2: Manual Trigger**
 
-4. **Set up billing:**
-   - Ensure billing is enabled for your project
-   - Cloud Run has a free tier, but usage beyond free tier requires billing
+```bash
+# API Search Service
+cd backend/api_search
+gcloud builds submit --config cloudbuild.yaml
 
-### Artifact Registry Setup
+# Restaurant Search API
+cd backend/api/restaurant-search
+gcloud builds submit --config cloudbuild.yaml
+```
 
-Artifact Registry is Google Cloud's container image registry. We'll use it instead of Container Registry (deprecated).
+#### CI/CD Configuration Files
 
-1. **Create Artifact Registry repository:**
-   ```bash
-   gcloud artifacts repositories create palate-repos \
-     --repository-format=docker \
-     --location=us-central1 \
-     --description="Docker repository for Palate application"
-   ```
+**`backend/api_search/cloudbuild.yaml`:**
+- Runs tests from `tests/` directory
+- Builds Docker image tagged with `BUILD_ID` and `latest`
+- Pushes to Container Registry (`gcr.io`)
+- Deploys to Cloud Run service `agent-search-api`
 
-2. **Configure Docker authentication:**
-   ```bash
-   gcloud auth configure-docker us-central1-docker.pkg.dev
-   ```
+**`backend/api/restaurant-search/cloudbuild.yaml`:**
+- Runs tests from `tests/` directory
+- Builds Docker image tagged with `COMMIT_SHA`
+- Pushes to Container Registry (`gcr.io`)
+- Deploys to Cloud Run service `restaurant-search-api`
 
-3. **Verify repository:**
-   ```bash
-   gcloud artifacts repositories list
-   ```
+#### Trigger Conditions
 
-### Deploying to Cloud Run
+Configure triggers to run on:
+- **Push to main branch** - Automatic production deployments
+- **Pull requests** - Run tests only (optional)
+- **Specific paths** - Only trigger when relevant files change
+- **Tags** - Deploy specific versions
 
-#### Method 1: Using Cloud Build (Recommended)
+**Example trigger setup:**
+```bash
+# Trigger on push to main for api_search
+gcloud builds triggers create github \
+  --name="api-search-deploy" \
+  --repo-name="YOUR_REPO" \
+  --branch-pattern="^main$" \
+  --included-files="backend/api_search/**" \
+  --build-config="backend/api_search/cloudbuild.yaml"
 
-Cloud Build automatically builds, tests, and deploys your services using the `cloudbuild.yaml` files.
+# Trigger on push to main for restaurant-search
+gcloud builds triggers create github \
+  --name="restaurant-search-deploy" \
+  --repo-name="YOUR_REPO" \
+  --branch-pattern="^main$" \
+  --included-files="backend/api/restaurant-search/**" \
+  --build-config="backend/api/restaurant-search/cloudbuild.yaml"
+```
 
-**API Search Service:**
+#### Viewing Build History
 
-1. **Navigate to service directory:**
-   ```bash
-   cd backend/api_search
-   ```
+```bash
+# List recent builds
+gcloud builds list
 
-2. **Submit build:**
-   ```bash
-   gcloud builds submit --config cloudbuild.yaml
-   ```
+# View specific build logs
+gcloud builds log BUILD_ID
 
-   This will:
-   - Run tests
-   - Build Docker image
-   - Push to Artifact Registry
-   - Deploy to Cloud Run
+# View in Console
+# https://console.cloud.google.com/cloud-build/builds
+```
 
-**Restaurant Search API:**
+### Deploy to Cloud Run
 
-1. **Navigate to service directory:**
-   ```bash
-   cd backend/api/restaurant-search
-   ```
+#### Method 1: CI/CD Pipeline (Recommended)
 
-2. **Submit build:**
-   ```bash
-   gcloud builds submit --config cloudbuild.yaml
-   ```
+**Automatic (via Git trigger):**
+- Push to configured branch → Pipeline runs automatically
+
+**Manual trigger:**
+```bash
+# API Search Service
+cd backend/api_search
+gcloud builds submit --config cloudbuild.yaml
+
+# Restaurant Search API
+cd backend/api/restaurant-search
+gcloud builds submit --config cloudbuild.yaml
+```
 
 #### Method 2: Manual Deployment
 
-**Build and push images manually:**
+**Build & Push:**
+```bash
+# API Search Service
+cd backend/api_search
+docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/agent-search-api:latest .
+docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/agent-search-api:latest
 
-1. **Build and tag for Artifact Registry:**
-   ```bash
-   # API Search Service
-   cd backend/api_search
-   docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/agent-search-api:latest .
-   
-   # Restaurant Search API
-   cd ../api/restaurant-search
-   docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/restaurant-search-api:latest .
-   ```
+# Restaurant Search API
+cd ../api/restaurant-search
+docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/restaurant-search-api:latest .
+docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/restaurant-search-api:latest
+```
 
-2. **Push images:**
-   ```bash
-   docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/agent-search-api:latest
-   docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/restaurant-search-api:latest
-   ```
+**Deploy:**
+```bash
+# API Search Service
+gcloud run deploy agent-search-api \
+  --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/agent-search-api:latest \
+  --region us-central1 --platform managed --allow-unauthenticated \
+  --port 8080 --memory 2Gi --cpu 2 --timeout 300 \
+  --max-instances 10 --min-instances 0 \
+  --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID
 
-3. **Deploy to Cloud Run:**
+# Restaurant Search API
+gcloud run deploy restaurant-search-api \
+  --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/restaurant-search-api:latest \
+  --region us-central1 --platform managed --allow-unauthenticated \
+  --port 8080 --memory 1Gi --cpu 1 \
+  --max-instances 10 --min-instances 0 \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID
+```
 
-   **API Search Service:**
-   ```bash
-   gcloud run deploy agent-search-api \
-     --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/agent-search-api:latest \
-     --region us-central1 \
-     --platform managed \
-     --allow-unauthenticated \
-     --port 8080 \
-     --memory 2Gi \
-     --cpu 2 \
-     --timeout 300 \
-     --max-instances 10 \
-     --min-instances 0 \
-     --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID
-   ```
-
-   **Restaurant Search API:**
-   ```bash
-   gcloud run deploy restaurant-search-api \
-     --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/palate-repos/restaurant-search-api:latest \
-     --region us-central1 \
-     --platform managed \
-     --allow-unauthenticated \
-     --port 8080 \
-     --memory 1Gi \
-     --cpu 1 \
-     --max-instances 10 \
-     --min-instances 0 \
-     --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID
-   ```
-
-#### Verify Deployment
-
-1. **List services:**
-   ```bash
-   gcloud run services list
-   ```
-
-2. **Get service URLs:**
-   ```bash
-   gcloud run services describe agent-search-api --region us-central1 --format 'value(status.url)'
-   gcloud run services describe restaurant-search-api --region us-central1 --format 'value(status.url)'
-   ```
-
-3. **Test endpoints:**
-   ```bash
-   curl https://YOUR-SERVICE-URL/health
-   ```
+**Verify:**
+```bash
+gcloud run services list
+gcloud run services describe agent-search-api --region us-central1 --format 'value(status.url)'
+curl https://YOUR-SERVICE-URL/health
+```
 
 ### Environment Variables in Cloud Run
 
-Set environment variables using the Cloud Console or gcloud CLI:
-
-**Using gcloud CLI:**
-
-**API Search Service:**
+**Via CLI:**
 ```bash
-gcloud run services update agent-search-api \
-  --region us-central1 \
+# API Search Service
+gcloud run services update agent-search-api --region us-central1 \
   --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID,GOOGLE_PLACES_API_KEY=YOUR_KEY,OPENAI_API_KEY=YOUR_KEY,DEMO_MODE=false
-```
 
-**Restaurant Search API:**
-```bash
-gcloud run services update restaurant-search-api \
-  --region us-central1 \
+# Restaurant Search API
+gcloud run services update restaurant-search-api --region us-central1 \
   --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_MAPS_API_KEY=YOUR_KEY,ENVIRONMENT=production
 ```
 
-**Using Cloud Console:**
-
+**Via Console:**
 1. Go to [Cloud Run Console](https://console.cloud.google.com/run)
-2. Click on your service
-3. Click "Edit & Deploy New Revision"
-4. Go to "Variables & Secrets" tab
-5. Add environment variables
-6. Click "Deploy"
+2. Click service → "Edit & Deploy New Revision"
+3. "Variables & Secrets" tab → Add variables → Deploy
 
-**Important Notes:**
-- For sensitive values (API keys), use **Secret Manager** instead of environment variables
-- Cloud Run automatically uses Application Default Credentials (ADC) for Firebase/Firestore
-- No need to set `GOOGLE_APPLICATION_CREDENTIALS` in Cloud Run (uses ADC)
+**Note:** Use Secret Manager for sensitive values. Cloud Run uses Application Default Credentials (ADC) for Firebase - no need to set `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ---
 
-## Environment Variables Reference
+## Environment Variables
 
-### API Search Service (`backend/api_search`)
+### API Search Service
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `GCP_PROJECT` | Yes | Google Cloud Project ID | `palate-mvp` |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Local only | Path to Firebase service account JSON | `./firebase-service.json` |
-| `GOOGLE_PLACES_API_KEY` | Yes | Google Places API key | `AIza...` |
-| `OPENAI_API_KEY` | Yes | OpenAI API key for rank agent | `sk-...` |
-| `DEMO_MODE` | No | Use hardcoded demo data (true/false) | `false` |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GCP_PROJECT` | Yes | GCP Project ID |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Local only | Path to Firebase service account JSON |
+| `GOOGLE_PLACES_API_KEY` | Yes | Google Places API key |
+| `OPENAI_API_KEY` | Yes | OpenAI API key for rank agent |
+| `DEMO_MODE` | No | Use demo data (true/false) |
 
-**Local Development:**
-- Create `.env` file in `backend/api_search/`
-- Include all required variables
+**Local:** Create `.env` in `backend/api_search/`  
+**Cloud Run:** Set via Console/CLI, ADC handles Firebase auth
 
-**Cloud Run:**
-- Set via Cloud Console or gcloud CLI
-- `GOOGLE_APPLICATION_CREDENTIALS` not needed (uses ADC)
+### Restaurant Search API
 
-### Restaurant Search API (`backend/api/restaurant-search`)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GOOGLE_MAPS_API_KEY` | Yes | Google Maps API key |
+| `GOOGLE_CLOUD_PROJECT` | Yes | GCP Project ID |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Local only | Full JSON content of service account |
+| `ENVIRONMENT` | No | development/production |
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `GOOGLE_MAPS_API_KEY` | Yes | Google Maps API key | `AIza...` |
-| `GOOGLE_CLOUD_PROJECT` | Yes | Google Cloud Project ID | `palate-mvp` |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Local only | Full JSON content of service account | `{"type":"service_account",...}` |
-| `ENVIRONMENT` | No | Environment name (development/production) | `production` |
+**Local:** Create `.env` in `backend/api/restaurant-search/`  
+**Cloud Run:** Set via Console/CLI, ADC handles Firebase auth
 
-**Local Development:**
-- Create `.env` file in `backend/api/restaurant-search/`
-- Include all required variables
-- For `FIREBASE_SERVICE_ACCOUNT_JSON`, provide full JSON as single-line string
+### Frontend
 
-**Cloud Run:**
-- Set via Cloud Console or gcloud CLI
-- `FIREBASE_SERVICE_ACCOUNT_JSON` not needed (uses ADC)
-
-### Frontend (Flutter)
-
-The Flutter app uses Firebase configuration files:
-- `android/app/google-services.json` (Android)
-- `ios/Runner/GoogleService-Info.plist` (iOS)
-- Firebase web config in code
-
-No additional environment variables needed for local development.
+Uses Firebase config files: `google-services.json` (Android), `GoogleService-Info.plist` (iOS). No env vars needed.
 
 ---
 
